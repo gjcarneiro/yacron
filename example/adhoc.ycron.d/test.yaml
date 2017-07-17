@@ -1,0 +1,43 @@
+
+defaults:
+  shell: /bin/bash
+
+  concurrencyPolicy: Allow
+  # Allow (default): allows concurrently running jobs
+  # Forbid: forbids concurrent runs, skipping next run if previous hasn’t finished yet
+  # Replace: cancels currently running job and replaces it with a new one
+
+  failsWhen:
+    producesStdout: false
+    producesStderr: true
+    nonzeroReturn: true
+
+  onFailure:
+    report:
+      sentry:
+      #   dsn:
+      #     value: example
+      mail:
+        from: example@foo.com
+        to: example@bar.com
+        smtp_host: 127.0.0.1
+        smtp_port: 10025
+
+jobs:
+  - name: test-01
+    command:
+      - echo
+      - "foobar"
+    schedule: "* * * * *"
+    captureStdout: true
+    failsWhen:
+      producesStdout: true
+
+  - name: test-02
+    command: |
+      echo "hello" 1>&2
+      sleep 1
+      echo "world"
+      exit 10
+    schedule: "* * * * *"
+    captureStderr: true
