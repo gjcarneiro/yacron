@@ -11,7 +11,7 @@ import aiosmtplib
 from yacron.config import JobConfig
 
 
-logger = logging.getLogger('ycron')
+logger = logging.getLogger('yacron')
 
 
 class StreamReader:

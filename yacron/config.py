@@ -1,5 +1,5 @@
 import os.path
-from typing import List, Union
+from typing import List
 
 import yaml
 from crontab import CronTab

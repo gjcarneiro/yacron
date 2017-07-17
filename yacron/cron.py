@@ -9,7 +9,7 @@ from yacron.config import parse_config, JobConfig
 from yacron.job import RunningJob
 
 
-logger = logging.getLogger('ycron')
+logger = logging.getLogger('yacron')
 WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
 
 

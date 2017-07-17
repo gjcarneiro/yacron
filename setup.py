@@ -21,6 +21,7 @@ requirements = [
 
 setup_requirements = [
     'setuptools_scm',
+    'pytest-runner',
 ]
 
 test_requirements = [
@@ -50,5 +51,11 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     setup_requires=setup_requirements,
+    tests_require=test_requirements,
     use_scm_version=True,
+    entry_points={
+        'console_scripts': [
+            'yacron = yacron.__main__:main',
+        ],
+    }
 )

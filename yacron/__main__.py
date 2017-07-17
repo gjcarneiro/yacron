@@ -10,7 +10,7 @@ from yacron.cron import Cron
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', "--config", default="/etc/ycron.d",
+    parser.add_argument('-c', "--config", default="/etc/yacron.d",
                         metavar="DIR")
     parser.add_argument('-l', "--log-level", default="INFO")
     args = parser.parse_args()
