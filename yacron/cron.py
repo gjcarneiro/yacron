@@ -1,4 +1,3 @@
-import time
 import logging
 import datetime
 from collections import defaultdict
