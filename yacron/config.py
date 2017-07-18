@@ -93,8 +93,6 @@ def parse_config_file(path: str) -> List[JobConfig]:
     for config_job in doc['jobs']:
         job_dict = dict(mergedicts(BUILTIN_DEFAULTS, defaults))
         job_dict = dict(mergedicts(job_dict, config_job))
-        import pprint
-        pprint.pprint(job_dict)
         jobs.append(JobConfig(job_dict))
     return jobs
 
