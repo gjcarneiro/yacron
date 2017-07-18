@@ -11,7 +11,7 @@ from yacron.cron import Cron
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', "--config", default="/etc/yacron.d",
-                        metavar="DIR")
+                        metavar="FILE-OR-DIR")
     parser.add_argument('-l', "--log-level", default="INFO")
     args = parser.parse_args()
 

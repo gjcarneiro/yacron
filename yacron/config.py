@@ -97,9 +97,13 @@ def parse_config_file(path: str) -> List[JobConfig]:
 
 def parse_config(config_arg: str) -> List[JobConfig]:
     jobs = []
-    for direntry in os.scandir(config_arg):
-        _, ext = os.path.splitext(direntry.name)
-        if ext in {'.yml', '.yaml'}:
-            config = parse_config_file(direntry.path)
-            jobs.extend(config)
+    if os.path.isdir(config_arg):
+        for direntry in os.scandir(config_arg):
+            _, ext = os.path.splitext(direntry.name)
+            if ext in {'.yml', '.yaml'}:
+                config = parse_config_file(direntry.path)
+                jobs.extend(config)
+    else:
+        config = parse_config_file(config_arg)
+        jobs.extend(config)
     return jobs
