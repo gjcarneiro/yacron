@@ -22,6 +22,12 @@ defaults:
         to: example@bar.com
         smtp_host: 127.0.0.1
         smtp_port: 10025
+  environment:
+    - key: FOO
+      value: foo
+    - key: BAR
+      value: bar
+
 
 jobs:
   - name: test-01
@@ -38,6 +44,14 @@ jobs:
       echo "hello" 1>&2
       sleep 1
       echo "world"
+      echo "\$FOO is: $FOO"
+      echo "\$BAR is: $BAR"
+      echo "\$ZBR is: $ZBR"
       exit 10
     schedule: "* * * * *"
     captureStderr: true
+    environment:
+      - key: FOO
+        value: xpto
+      - key: ZBR
+        value: blah

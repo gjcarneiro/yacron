@@ -17,3 +17,11 @@ def test_mergedicts_right_none():
 	    {"a": {'x': 1}},
 	    {"a": None, "b": 2})) == \
 		{"a": {'x': 1}, "b": 2}
+
+
+def test_mergedicts_lists():
+	assert dict(config.mergedicts(
+	    {"env": [{'key': 'FOO'}]},
+	    {"env": [{'key': 'BAR'}]})) \
+		== \
+		{"env": [{'key': 'FOO'}, {'key': 'BAR'}]}

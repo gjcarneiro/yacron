@@ -1,4 +1,5 @@
 import sys
+import os
 import logging
 import asyncio
 import asyncio.subprocess
@@ -64,6 +65,7 @@ class RunningJob:
         self.stdout = None
 
     async def start(self) -> None:
+        kwargs = {}
         if isinstance(self.config.command, list):
             create = asyncio.create_subprocess_exec
             cmd = self.config.command
@@ -74,8 +76,12 @@ class RunningJob:
             else:
                 create = asyncio.create_subprocess_shell
                 cmd = [self.config.command]
+        if self.config.environment:
+            env = dict(os.environ)
+            for envvar in self.config.environment:
+                env[envvar['key']] = envvar['value']
+            kwargs['env'] = env
         logger.debug("%s: will execute argv %r", self.config.name, cmd)
-        kwargs = {}
         if self.config.captureStderr:
             kwargs['stderr'] = asyncio.subprocess.PIPE
         if self.config.captureStdout:

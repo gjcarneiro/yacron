@@ -33,6 +33,7 @@ BUILTIN_DEFAULTS = {
             },
         },
     },
+    'environment': [],
 }
 
 
@@ -46,6 +47,8 @@ def mergedicts(dict1, dict2):
                 yield (k, dict(mergedicts(v1, v2)))
             elif isinstance(v1, dict) and v2 is None:  # modification
                 yield (k, dict(mergedicts(v1, {})))
+            elif isinstance(v1, list) and isinstance(v2, list):  # merge lists
+                yield (k, v1 + v2)
             else:
                 yield (k, v2)
         elif k in dict1:
@@ -68,6 +71,8 @@ class JobConfig:
         self.saveLimit = config.pop('saveLimit')
         self.failsWhen = config.pop('failsWhen')
         self.onFailure = config.pop('onFailure')
+        self.environment = config.pop('environment')
+        print(self.environment)
 
     def get_sentry_dsn(self):
         dsn_dict = self.onFailure['report']['sentry']['dsn']
