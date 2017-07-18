@@ -72,7 +72,6 @@ class JobConfig:
         self.failsWhen = config.pop('failsWhen')
         self.onFailure = config.pop('onFailure')
         self.environment = config.pop('environment')
-        print(self.environment)
 
     def get_sentry_dsn(self):
         dsn_dict = self.onFailure['report']['sentry']['dsn']
