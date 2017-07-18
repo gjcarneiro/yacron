@@ -48,7 +48,8 @@ jobs:
       echo "\$BAR is: $BAR"
       echo "\$ZBR is: $ZBR"
       exit 10
-    schedule: "* * * * *"
+    schedule:
+      minute: "*/2"
     captureStderr: true
     environment:
       - key: FOO

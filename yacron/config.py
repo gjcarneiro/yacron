@@ -1,8 +1,11 @@
 import os.path
 from typing import List
+import logging
 
 import yaml
 from crontab import CronTab
+
+logger = logging.getLogger('yacron.config')
 
 
 BUILTIN_DEFAULTS = {
@@ -62,8 +65,20 @@ class JobConfig:
     def __init__(self, config) -> None:
         self.name = config['name']  # type: str
         self.command = config['command']  # type: Union[str, List[str]]
-        self.schedule_unparsed = config.pop('schedule')  # type: str
-        self.schedule = CronTab(self.schedule_unparsed)  # type: CronTab
+        self.schedule_unparsed = config.pop('schedule')
+        if isinstance(self.schedule_unparsed, str):
+            self.schedule = CronTab(self.schedule_unparsed)  # type: CronTab
+        elif isinstance(self.schedule_unparsed, dict):
+            minute = self.schedule_unparsed.get("minute", "*")
+            hour = self.schedule_unparsed.get("hour", "*")
+            day = self.schedule_unparsed.get("day", "*")
+            month = self.schedule_unparsed.get("month", "*")
+            dow = self.schedule_unparsed.get("dayOfWeek", "*")
+            tab = '{} {} {} {} {}'.format(minute, hour, day, month, dow)
+            logger.debug("Converted schedule to %r", tab)
+            self.schedule = CronTab(tab)
+        else:
+            raise ValueError("invalid schedule: %r", self.schedule_unparsed)
         self.shell = config.pop('shell')
         self.concurrencyPolicy = config.pop('concurrencyPolicy')
         self.captureStderr = config.pop('captureStderr')
