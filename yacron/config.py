@@ -37,6 +37,12 @@ BUILTIN_DEFAULTS = {
         },
     },
     'environment': [],
+    'retry': {
+        'maximumRetries': 0,
+        'initialDelay': 1,
+        'maximumDelay': 300,
+        'backoffMultiplier': 2,
+    }
 }
 
 
@@ -87,6 +93,7 @@ class JobConfig:
         self.failsWhen = config.pop('failsWhen')
         self.onFailure = config.pop('onFailure')
         self.environment = config.pop('environment')
+        self.retry = config.pop('retry')
 
     def get_sentry_dsn(self):
         dsn_dict = self.onFailure['report']['sentry']['dsn']
