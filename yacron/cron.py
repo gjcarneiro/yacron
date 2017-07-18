@@ -64,7 +64,7 @@ class Cron:
             self.cron_jobs = config
 
     async def spawn_jobs(self) -> None:
-        now = time.time()
+        now = datetime.datetime.now()
         for job in self.cron_jobs:
             if job.schedule.test(now):
                 logger.debug("Job %s (%s) is scheduled for now",
