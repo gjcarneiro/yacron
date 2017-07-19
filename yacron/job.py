@@ -126,7 +126,7 @@ class RunningJob:
 
     async def report_success(self):
         logger.info("Cron job %s: reporting success", self.config.name)
-        await self._report_common(self.config.success['report'])
+        await self._report_common(self.config.onSuccess['report'])
 
     async def _report_common(self, report_config):
         results = await asyncio.gather(
