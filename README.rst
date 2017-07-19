@@ -173,8 +173,8 @@ It is possible also to report job success, as well as failure, via the
           to: example@bar.com
           smtp_host: 127.0.0.1
 
-Halding failure
-+++++++++++++++
+Handling failure
+++++++++++++++++
 
 By default, yacron considers that a job has `failed` if either the process
 returns a non-zero code or if it generates output to `standard error` (and
