@@ -3,13 +3,15 @@ from typing import List
 import logging
 
 import yaml
+import jsonschema
+
 from crontab import CronTab
 
 logger = logging.getLogger('yacron.config')
 
 
-BUILTIN_DEFAULTS = {
-    'shell': None,
+DEFAULT_CONFIG = {
+    'shell': '/bin/sh',
     'concurrencyPolicy': 'Allow',
     'captureStderr': True,
     'captureStdout': False,
@@ -45,6 +47,104 @@ BUILTIN_DEFAULTS = {
     'environment': [],
 }
 
+CONFIG_SCHEMA = yaml.load('''
+type: object
+properties:
+  shell: {type: string}
+  name: {type: string}
+  concurrencyPolicy:
+    type: string
+    enum: ['Allow', 'Forbid', 'Replace']
+  command:
+    oneOf:
+      - type: string
+      - type: array
+        items:
+          type: string
+  captureStderr: {type: boolean}
+  captureStdout: {type: boolean}
+  saveLimit:
+    type: integer
+    minimum: 1
+    maximum: 100000
+  failsWhen:
+    type: object
+    properties:
+      producesStdout: {type: boolean}
+      producesStderr: {type: boolean}
+      nonzeroReturn: {type: boolean}
+    additionalProperties: false
+  onFailure:
+    type: object
+    properties:
+      retry:
+        type: object
+        properties:
+          maximumRetries:
+            type: integer
+          initialDelay:
+            type: number
+          maximumDelay:
+            type: number
+          backoffMultiplier:
+            type: number
+      report: {"$ref": "#/definitions/report"}
+  schedule:
+    oneOf:
+      - type: string
+      - type: object
+        properties:
+          minute: {oneOf: [{type: string}, {type: integer}]}
+          hour: {oneOf: [{type: string}, {type: integer}]}
+          dayOfMonth: {oneOf: [{type: string}, {type: integer}]}
+          month: {oneOf: [{type: string}, {type: integer}]}
+          year: {oneOf: [{type: string}, {type: integer}]}
+          dayOfWeek: {oneOf: [{type: string}, {type: integer}]}
+        additionalProperties: false
+  environment:
+    type: array
+    items:
+      type: object
+      properties:
+        key: {type: string}
+        value: {type: string}
+required:
+  - name
+  - command
+additionalProperties: false
+definitions:
+  report:
+    type: object
+    properties:
+      sentry:
+        type: object
+        properties:
+          dsn:
+            type: object
+            properties:
+              value: {oneOf: [{type: string}, {type: "null"}]}
+              fromFile: {oneOf: [{type: string}, {type: "null"}]}
+              fromEnvVar: {oneOf: [{type: string}, {type: "null"}]}
+            additionalProperties: false
+      mail:
+        type: object
+        properties:
+          from: {oneOf: [{type: string, format: email}, {type: "null"}]}
+          to: {oneOf: [{type: string, format: email}, {type: "null"}]}
+          smtp_host: {oneOf: [{type: string}, {type: "null"}]}
+          smtp_port: {oneOf: [{type: integer}, {type: "null"}]}
+
+''')
+
+
+# Check that the default config passes the schema validation
+tmp = dict(DEFAULT_CONFIG)
+tmp['name'] = 'foo'
+tmp['command'] = 'true'
+tmp['schedule'] = '* * * * *'
+jsonschema.validate(tmp, CONFIG_SCHEMA)
+del tmp
+
 
 # Slightly modified version of https://stackoverflow.com/a/7205672/2211825
 def mergedicts(dict1, dict2):
@@ -69,6 +169,7 @@ def mergedicts(dict1, dict2):
 class JobConfig:
 
     def __init__(self, config) -> None:
+        jsonschema.validate(config, CONFIG_SCHEMA)
         self.name = config['name']  # type: str
         self.command = config['command']  # type: Union[str, List[str]]
         self.schedule_unparsed = config.pop('schedule')
@@ -113,7 +214,7 @@ def parse_config_file(path: str) -> List[JobConfig]:
     defaults = doc['defaults']
     jobs = []
     for config_job in doc['jobs']:
-        job_dict = dict(mergedicts(BUILTIN_DEFAULTS, defaults))
+        job_dict = dict(mergedicts(DEFAULT_CONFIG, defaults))
         job_dict = dict(mergedicts(job_dict, config_job))
         jobs.append(JobConfig(job_dict))
     return jobs
