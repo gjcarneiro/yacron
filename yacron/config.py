@@ -77,7 +77,7 @@ class JobConfig:
         elif isinstance(self.schedule_unparsed, dict):
             minute = self.schedule_unparsed.get("minute", "*")
             hour = self.schedule_unparsed.get("hour", "*")
-            day = self.schedule_unparsed.get("day", "*")
+            day = self.schedule_unparsed.get("dayOfMonth", "*")
             month = self.schedule_unparsed.get("month", "*")
             dow = self.schedule_unparsed.get("dayOfWeek", "*")
             tab = '{} {} {} {} {}'.format(minute, hour, day, month, dow)
