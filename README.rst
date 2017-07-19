@@ -221,11 +221,11 @@ It is possible to instruct yacron to retry failing cron jobs by adding a
           from: example@foo.com
           to: example@bar.com
           smtp_host: 127.0.0.1
-        retry:
-          maximumRetries: 10
-          initialDelay: 1
-          maximumDelay: 30
-          backoffMultiplier: 2
+      retry:
+        maximumRetries: 10
+        initialDelay: 1
+        maximumDelay: 30
+        backoffMultiplier: 2
 
 The above settings tell yacron to retry the job up to 10 times, with the delay
 between retries defined by an exponential backoff process: initially 1 second,
@@ -246,11 +246,11 @@ For that situation, you can use the ``onPermanentFailure`` option:
       minute: "*/10"
     captureStderr: true
     onFailure:
-        retry:
-          maximumRetries: 10
-          initialDelay: 1
-          maximumDelay: 30
-          backoffMultiplier: 2
+      retry:
+        maximumRetries: 10
+        initialDelay: 1
+        maximumDelay: 30
+        backoffMultiplier: 2
     onPermanentFailure:
       report:
         mail:
