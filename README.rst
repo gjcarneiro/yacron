@@ -12,16 +12,17 @@ A modern Cron replacement that is Docker-friendly
 Features
 --------
 
-* "Crontab" is in YAML format
-* Builtin sending of Sentry and Mail outputs when cron jobs fail
-* Flexible configuration: you decide how to determine if a cron job fails or not
+* "Crontab" is in YAML format;
+* Builtin sending of Sentry and Mail outputs when cron jobs fail;
+* Flexible configuration: you decide how to determine if a cron job fails or not;
 * Designed for running in Docker, Kubernetes, or 12 factor environments:
 
-  * Runs in the foreground
-  * Logs everything to stdout/stderr
+  * Runs in the foreground;
+  * Logs everything to stdout/stderr [1]_;
 
-* Option to automatically retry failing cron jobs, with exponential backoff
+* Option to automatically retry failing cron jobs, with exponential backoff.
 
+.. [1] Whereas vixie cron only logs to syslog, requiring a syslog daemon to be running in the background or else you don't get logs!
 
 Usage
 -----
