@@ -38,11 +38,12 @@ jobs:
     captureStdout: true
     failsWhen:
       producesStdout: true
-    retry:
-      maximumRetries: 10
-      initialDelay: 1
-      maximumDelay: 30
-      backoffMultiplier: 2
+    onFailure:
+      retry:
+        maximumRetries: 10
+        initialDelay: 1
+        maximumDelay: 30
+        backoffMultiplier: 2
 
   - name: test-02
     command: |
