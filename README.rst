@@ -30,7 +30,7 @@ Usage
 Configuration is in YAML format.  To start yacron, give it a configuration file
 or directory path as the ``-c`` argument.  For example::
 
-	yacron -c /tmp/my-crontab.yaml
+    yacron -c /tmp/my-crontab.yaml
 
 This starts yacron (always in the foreground!), reading ``/tmp/my-crontab.yaml``
 as configuration file.
@@ -42,11 +42,11 @@ This configuration runs a command every 5 minutes:
 
 .. code-block:: yaml
 
-	jobs:
-	  - name: test-01
-	    command: echo "foobar"
-	    shell: /bin/bash
-	    schedule: "*/5 * * * *"
+    jobs:
+      - name: test-01
+        command: echo "foobar"
+        shell: /bin/bash
+        schedule: "*/5 * * * *"
 
 The command can be a string or a list of strings.  If command is a string,
 yacron runs it through a shell, which is ``/bin/bash`` in the above example, but
@@ -58,43 +58,43 @@ configuration:
 
 .. code-block:: yaml
 
-	jobs:
-	  - name: test-01
-	    command:
-	      - echo
-	      - foobar
-	    schedule: "*/5 * * * *"
+    jobs:
+      - name: test-01
+        command:
+          - echo
+          - foobar
+        schedule: "*/5 * * * *"
 
 
 The `schedule` option can be a string in the traditional crontab format, or can
 be an object with properties.  The following configuration runs a command every
-5 minutes, but only on the specic date 2017-07-19, and doesn't run it in any
+5 minutes, but only on the specific date 2017-07-19, and doesn't run it in any
 other date:
 
 .. code-block:: yaml
 
-	jobs:
-	  - name: test-01
-	    command: echo "foobar"
-	    schedule:
-	      minute: "*/5"
-	      dayOfMonth: 19
-	      month: 7
-	      year: 2017
-	      dayOfWeek: "*"
+    jobs:
+      - name: test-01
+        command: echo "foobar"
+        schedule:
+          minute: "*/5"
+          dayOfMonth: 19
+          month: 7
+          year: 2017
+          dayOfWeek: "*"
 
 You can ask for environment variables to be defined for command execution:
 
 .. code-block:: yaml
 
-	jobs:
-	  - name: test-01
-	    command: echo "foobar"
-	    shell: /bin/bash
-	    schedule: "*/5 * * * *"
-	    enviroment:
-	      - key: PATH
-	        value: /bin:/usr/bin
+    jobs:
+      - name: test-01
+        command: echo "foobar"
+        shell: /bin/bash
+        schedule: "*/5 * * * *"
+        environment:
+          - key: PATH
+            value: /bin:/usr/bin
 
 Specifying defaults
 +++++++++++++++++++
@@ -106,19 +106,19 @@ Although cron jobs can still override the defaults, as needed:
 
 .. code-block:: yaml
 
-	defaults:
-	    enviroment:
-	      - key: PATH
-	        value: /bin:/usr/bin
-	    shell: /bin/bash
-	jobs:
-	  - name: test-01
-	    command: echo "foobar"  # runs with /bin/bash as shell
-	    schedule: "*/5 * * * *"
-	  - name: test-02  # runs with /bin/sh as shell
-	    command: echo "zbr"
-	    shell: /bin/sh
-	    schedule: "*/5 * * * *"
+    defaults:
+        environment:
+          - key: PATH
+            value: /bin:/usr/bin
+        shell: /bin/bash
+    jobs:
+      - name: test-01
+        command: echo "foobar"  # runs with /bin/bash as shell
+        schedule: "*/5 * * * *"
+      - name: test-02  # runs with /bin/sh as shell
+        command: echo "zbr"
+        shell: /bin/sh
+        schedule: "*/5 * * * *"
 
 Reporting
 +++++++++
@@ -192,16 +192,16 @@ You can instruct yacron how to determine if a job has failed or not via the
     nonzeroReturn: true
 
 producesStdout
-	If true, any captured standard output causes yacron to consider the job
-	as failed.  This is false by default.
+    If true, any captured standard output causes yacron to consider the job
+    as failed.  This is false by default.
 
 producesStderr
-	If true, any captured standard error causes yacron to consider the job
-	as failed.  This is true by default.
+    If true, any captured standard error causes yacron to consider the job
+    as failed.  This is true by default.
 
 nonzeroReturn
-	If true, if the job process returns a code other than zero causes yacron
-	to consider the job as failed.  This is true by default.
+    If true, if the job process returns a code other than zero causes yacron
+    to consider the job as failed.  This is true by default.
 
 It is possible to instruct yacron to retry failing cron jobs by adding a
 ``retry`` option inside ``onFailure``:
