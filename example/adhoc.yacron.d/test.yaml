@@ -12,7 +12,7 @@ defaults:
     producesStderr: true
     nonzeroReturn: true
 
-  onFailure:
+  onPermanentFailure:
     report:
       sentry:
       #   dsn:
@@ -40,7 +40,7 @@ jobs:
       producesStdout: true
     onFailure:
       retry:
-        maximumRetries: 10
+        maximumRetries: 3
         initialDelay: 1
         maximumDelay: 30
         backoffMultiplier: 2

@@ -10,6 +10,23 @@ from crontab import CronTab
 logger = logging.getLogger('yacron.config')
 
 
+_REPORT_DEFAULTS = {
+    'sentry': {
+        'dsn': {
+            'value': None,
+            'fromFile': None,
+            'fromEnvVar': None,
+        },
+    },
+    'mail': {
+        'sender': None,
+        'recipient': None,
+        'smtp_host': None,
+        'smtp_port': 25,
+    },
+}
+
+
 DEFAULT_CONFIG = {
     'shell': '/bin/sh',
     'concurrencyPolicy': 'Allow',
@@ -22,27 +39,19 @@ DEFAULT_CONFIG = {
         'nonzeroReturn': True,
     },
     'onFailure': {
-        'report': {
-            'sentry': {
-                'dsn': {
-                    'value': None,
-                    'fromFile': None,
-                    'fromEnvVar': None,
-                },
-            },
-            'mail': {
-                'sender': None,
-                'recipient': None,
-                'smtp_host': None,
-                'smtp_port': 25,
-            },
-        },
         'retry': {
             'maximumRetries': 0,
             'initialDelay': 1,
             'maximumDelay': 300,
             'backoffMultiplier': 2,
-        }
+        },
+        'report': _REPORT_DEFAULTS,
+    },
+    'onPermanentFailure': {
+        'report': _REPORT_DEFAULTS,
+    },
+    'onSuccess': {
+        'report': _REPORT_DEFAULTS,
     },
     'environment': [],
 }
@@ -88,6 +97,14 @@ properties:
             type: number
           backoffMultiplier:
             type: number
+      report: {"$ref": "#/definitions/report"}
+  onPermanentFailure:
+    type: object
+    properties:
+      report: {"$ref": "#/definitions/report"}
+  onSuccess:
+    type: object
+    properties:
       report: {"$ref": "#/definitions/report"}
   schedule:
     oneOf:
@@ -193,19 +210,9 @@ class JobConfig:
         self.saveLimit = config.pop('saveLimit')
         self.failsWhen = config.pop('failsWhen')
         self.onFailure = config.pop('onFailure')
+        self.onPermanentFailure = config.pop('onPermanentFailure')
+        self.onSuccess = config.pop('onSuccess')
         self.environment = config.pop('environment')
-        self.retry = self.onFailure.pop('retry')
-
-    def get_sentry_dsn(self):
-        dsn_dict = self.onFailure['report']['sentry']['dsn']
-        if dsn_dict['value']:
-            return dsn_dict['value']
-        elif dsn_dict['fromFile']:
-            with open(dsn_dict['fromFile'], "rt") as dsn_file:
-                return dsn_file.read().strip()
-        elif dsn_dict['fromEnvVar']:
-            return os.environ[dsn_dict['fromEnvVar']]
-        return None
 
 
 def parse_config_file(path: str) -> List[JobConfig]:

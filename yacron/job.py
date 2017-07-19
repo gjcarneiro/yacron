@@ -116,28 +116,46 @@ class RunningJob:
         # TODO: check that it exits after a while, if not send it SIGKILL
 
     async def report_failure(self):
-        sentry_dsn = self.config.get_sentry_dsn()
-        report = []
-        if sentry_dsn:
-            report.append(self._report_sentry(sentry_dsn))
-        mail = self.config.onFailure['report']['mail']
-        if mail['smtp_host'] and mail['to'] and mail['from']:
-            report.append(self._report_mail(mail))
-        if report:
-            results = await asyncio.gather(*report, return_exceptions=True)
-            for result in results:
-                if isinstance(result, Exception):
-                    logger.error("Problem reporting job %s failure: %s",
-                                 self.config.name, result)
+        logger.info("Cron job %s: reporting failure", self.config.name)
+        await self._report_common(self.config.onFailure['report'])
 
-    async def _report_sentry(self, sentry_dsn):
+    async def report_permanent_failure(self):
+        logger.info("Cron job %s: reporting permanent failure",
+                    self.config.name)
+        await self._report_common(self.config.onPermanentFailure['report'])
+
+    async def report_success(self):
+        logger.info("Cron job %s: reporting success", self.config.name)
+        await self._report_common(self.config.success['report'])
+
+    async def _report_common(self, report_config):
+        results = await asyncio.gather(
+            self._report_sentry(report_config['sentry']),
+            self._report_mail(report_config['mail']),
+            return_exceptions=True
+        )
+        for result in results:
+            if isinstance(result, Exception):
+                logger.error("Problem reporting job %s failure: %s",
+                             self.config.name, result)
+
+    async def _report_sentry(self, config):
+        if config['dsn']['value']:
+            dsn = config['dsn']['value']
+        elif config['dsn']['fromFile']:
+            with open(config['dsn']['fromFile'], "rt") as dsn_file:
+                dsn = dsn_file.read().strip()
+        elif config['dsn']['fromEnvVar']:
+            dsn = os.environ[config['dsn']['fromEnvVar']]
+        else:
+            return  # sentry disabled: early return
         if self.stdout and self.stderr:
             body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
                     .format(self.stdout, self.stderr))
         else:
             body = self.stdout or self.stderr or '(no output was captured)'
         client = Client(transport=AioHttpTransport,
-                        dsn=sentry_dsn,
+                        dsn=dsn,
                         string_max_length=4096)
         extra = {
             'job': self.config.name,
@@ -152,6 +170,8 @@ class RunningJob:
         )
 
     async def _report_mail(self, mail):
+        if not (mail['smtp_host'] and mail['to'] and mail['from']):
+            return  # email reporting disabled
         if self.stdout and self.stderr:
             body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
                     .format(self.stdout, self.stderr))
