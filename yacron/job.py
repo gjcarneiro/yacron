@@ -1,17 +1,16 @@
-import sys
-import os
-import logging
 import asyncio
 import asyncio.subprocess
+import logging
+import os
+import sys
 from email.mime.text import MIMEText
-from typing import Dict, Any, Optional, Awaitable, List, Dict  # noqa
+from typing import Any, Awaitable, Dict, List, Optional  # noqa
 
 from raven import Client
 from raven_aiohttp import AioHttpTransport
+
 import aiosmtplib
-
 from yacron.config import JobConfig
-
 
 logger = logging.getLogger('yacron')
 
@@ -47,15 +46,16 @@ class StreamReader:
                     self.discarded_lines += 1
                 self.save_bottom.append(line)
 
-    async def join(self):
+    async def join(self) -> str:
         await self._reader
         if self.save_bottom:
             middle = (["   [.... {} lines discarded ...]\n"
                        .format(self.discarded_lines)]
                       if self.discarded_lines else [])
-            return ''.join(self.save_top + middle + self.save_bottom)
+            output = ''.join(self.save_top + middle + self.save_bottom)
         else:
-            return ''.join(self.save_top)
+            output = ''.join(self.save_top)
+        return output
 
 
 class RunningJob:
@@ -66,8 +66,8 @@ class RunningJob:
         self.retcode = None  # type: Optional[int]
         self._stderr_reader = None  # type: Optional[StreamReader]
         self._stdout_reader = None  # type: Optional[StreamReader]
-        self.stderr = None
-        self.stdout = None
+        self.stderr = None  # type: Optional[str]
+        self.stdout = None  # type: Optional[str]
 
     async def start(self) -> None:
         kwargs = {}  # type: Dict[str, Any]

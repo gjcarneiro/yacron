@@ -1,11 +1,11 @@
-import os.path
-from typing import List
 import logging
+import os.path
 from typing import Union  # noqa
+from typing import List
 
-import yaml
 import jsonschema
 
+import yaml
 from crontab import CronTab
 
 logger = logging.getLogger('yacron.config')
@@ -190,7 +190,7 @@ def mergedicts(dict1, dict2):
 
 class JobConfig:
 
-    def __init__(self, config) -> None:
+    def __init__(self, config: dict) -> None:
         jsonschema.validate(config, CONFIG_SCHEMA)
         self.name = config['name']  # type: str
         self.command = config['command']  # type: Union[str, List[str]]

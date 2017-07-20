@@ -1,9 +1,9 @@
-import sys
-import logging
 import argparse
-import signal
 import asyncio
 import asyncio.subprocess
+import logging
+import signal
+import sys
 
 from yacron.cron import Cron
 

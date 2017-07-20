@@ -1,14 +1,13 @@
-import logging
-import datetime
-from collections import defaultdict, OrderedDict
 import asyncio
 import asyncio.subprocess
-from typing import Dict, Any, Optional, Awaitable, List, Dict  # noqa
+import datetime
+import logging
 import sys
+from collections import OrderedDict, defaultdict
+from typing import Any, Awaitable, Dict, List, Optional  # noqa
 
-from yacron.config import parse_config, JobConfig
+from yacron.config import JobConfig, parse_config
 from yacron.job import RunningJob
-
 
 logger = logging.getLogger('yacron')
 WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
