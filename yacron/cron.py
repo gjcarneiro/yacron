@@ -164,6 +164,8 @@ class Cron:
                 await asyncio.sleep(1)
 
     async def handle_job_failure(self, job: RunningJob) -> None:
+        if self._stop_event.is_set():
+            return
         if job.stdout:
             logger.info("Job %s STDOUT:\n%s",
                         job.config.name, job.stdout.rstrip())
