@@ -223,7 +223,7 @@ class JobConfig:
 def parse_config_file(path: str) -> List[JobConfig]:
     with open(path, "rb") as stream:
         doc = yaml.load(stream)
-    defaults = doc['defaults']
+    defaults = doc.get('defaults', {})
     jobs = []
     for config_job in doc['jobs']:
         job_dict = dict(mergedicts(DEFAULT_CONFIG, defaults))
