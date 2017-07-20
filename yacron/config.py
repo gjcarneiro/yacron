@@ -1,6 +1,7 @@
 import os.path
 from typing import List
 import logging
+from typing import Union  # noqa
 
 import yaml
 import jsonschema

@@ -4,6 +4,7 @@ import logging
 import asyncio
 import asyncio.subprocess
 from email.mime.text import MIMEText
+from typing import Dict, Any, Optional, Awaitable, List, Dict  # noqa
 
 from raven import Client
 from raven_aiohttp import AioHttpTransport
@@ -15,6 +16,10 @@ from yacron.config import JobConfig
 logger = logging.getLogger('yacron')
 
 
+def create_task(coro: Awaitable) -> asyncio.Task:
+    return asyncio.get_event_loop().create_task(coro)
+
+
 class StreamReader:
 
     def __init__(self, job, stream_name, stream):
@@ -22,7 +27,7 @@ class StreamReader:
         self.save_bottom = []
         self.job = job
         self.stream_name = stream_name
-        self._reader = asyncio.Task(self._read(stream))
+        self._reader = create_task(self._read(stream))
         self.discarded_lines = 0
 
     async def _read(self, stream):
@@ -57,15 +62,15 @@ class RunningJob:
 
     def __init__(self, config: JobConfig) -> None:
         self.config = config
-        self.proc = None
-        self.retcode = None
-        self._stderr_reader = None
-        self._stdout_reader = None
+        self.proc = None  # type: Optional[asyncio.subprocess.Process]
+        self.retcode = None  # type: Optional[int]
+        self._stderr_reader = None  # type: Optional[StreamReader]
+        self._stdout_reader = None  # type: Optional[StreamReader]
         self.stderr = None
         self.stdout = None
 
     async def start(self) -> None:
-        kwargs = {}
+        kwargs = {}  # type: Dict[str, Any]
         if isinstance(self.config.command, list):
             create = asyncio.create_subprocess_exec
             cmd = self.config.command
@@ -95,6 +100,8 @@ class RunningJob:
                 StreamReader(self, 'stdout', self.proc.stdout)
 
     async def wait(self) -> None:
+        if self.proc is None:
+            raise RuntimeError("process is not running")
         self.retcode = await self.proc.wait()
         if self._stderr_reader:
             self.stderr = await self._stderr_reader.join()
@@ -112,6 +119,8 @@ class RunningJob:
         return False
 
     async def cancel(self) -> None:
+        if self.proc is None:
+            raise RuntimeError("process is not running")
         self.proc.terminate()
         # TODO: check that it exits after a while, if not send it SIGKILL
 

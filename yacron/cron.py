@@ -3,6 +3,7 @@ import datetime
 from collections import defaultdict, OrderedDict
 import asyncio
 import asyncio.subprocess
+from typing import Dict, Any, Optional, Awaitable, List, Dict  # noqa
 
 from yacron.config import parse_config, JobConfig
 from yacron.job import RunningJob
@@ -12,7 +13,7 @@ logger = logging.getLogger('yacron')
 WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
 
 
-def next_sleep_interval():
+def next_sleep_interval() -> float:
     now = datetime.datetime.utcnow()
     target = (datetime.datetime(now.year, now.month, now.day,
                                 now.hour, now.minute) +
@@ -20,31 +21,29 @@ def next_sleep_interval():
     return (target - now).total_seconds()
 
 
-def create_task(coro, *, loop=None):
-    if loop is None:
-        loop = asyncio.get_event_loop()
-    return loop.create_task(coro)
+def create_task(coro: Awaitable) -> asyncio.Task:
+    return asyncio.get_event_loop().create_task(coro)
 
 
 class JobRetryState:
 
-    def __init__(self, initialDelay: float):
+    def __init__(self, initialDelay: float) -> None:
         self.delay = initialDelay
         self.count = 0  # number of times retried
-        self.task = None
+        self.task = None  # type: Optional[asyncio.Task]
 
 
 class Cron:
 
     def __init__(self, config_arg: str) -> None:
         # list of cron jobs we /want/ to run
-        self.cron_jobs = OrderedDict()  # type: List[JobConfig]
+        self.cron_jobs = OrderedDict()  # type: Dict[str, JobConfig]
         # list of cron jobs already running
         # name -> list of RunningJob
         self.running_jobs = \
             defaultdict(list)  # type: Dict[str, List[RunningJob]]
         self.config_arg = config_arg
-        self._wait_for_running_jobs_task = None
+        self._wait_for_running_jobs_task = None  # type: Optional[asyncio.Task]
         self._stop_event = asyncio.Event()
         self.retry_state = {}  # type: Dict[str, JobRetryState]
 
@@ -73,11 +72,11 @@ class Cron:
 
         await self._wait_for_running_jobs_task
 
-    def signal_shutdown(self):
+    def signal_shutdown(self) -> None:
         logger.debug("Signalling shutdown")
         self._stop_event.set()
 
-    def update_config(self):
+    def update_config(self) -> None:
         try:
             config = parse_config(self.config_arg)
         except Exception as exc:
@@ -106,8 +105,8 @@ class Cron:
             elif job.concurrencyPolicy == 'Forbid':
                 return
             elif job.concurrencyPolicy == 'Replace':
-                for job in self.running_jobs[job.name]:
-                    await job.cancel()
+                for running_job in self.running_jobs[job.name]:
+                    await running_job.cancel()
             else:
                 raise AssertionError
         logger.info("Starting job %s", job.name)
@@ -117,9 +116,9 @@ class Cron:
         logger.info("Job %s spawned", job.name)
 
     # continually watches for the running jobs, clean them up when they exit
-    async def _wait_for_running_jobs(self):
+    async def _wait_for_running_jobs(self) -> None:
         # job -> wait task
-        wait_tasks = {}
+        wait_tasks = {}  # type: Dict[RunningJob, asyncio.Task]
         while self.running_jobs or not self._stop_event.is_set():
             try:
                 for jobs in self.running_jobs.values():
@@ -203,7 +202,7 @@ class Cron:
                 state.delay = min(state.delay * multiplier, max_delay)
 
     async def schedule_retry_job(self, job_name: str, delay: float,
-                                 retry_num: int):
+                                 retry_num: int) -> None:
         logger.info("Cron job %s scheduled to be retried (#%i) "
                     "in %.1f seconds",
                     job_name, retry_num, delay)
@@ -219,7 +218,7 @@ class Cron:
         await self.cancel_job_retries(job.config.name)
         await job.report_success()
 
-    async def cancel_job_retries(self, name: str):
+    async def cancel_job_retries(self, name: str) -> None:
         try:
             state = self.retry_state.pop(name)
         except KeyError:
