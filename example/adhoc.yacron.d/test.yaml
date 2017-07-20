@@ -20,8 +20,8 @@ defaults:
       mail:
         from: example@foo.com
         to: example@bar.com
-        smtp_host: 127.0.0.1
-        smtp_port: 10025
+        smtpHost: 127.0.0.1
+        smtpPort: 10025
   environment:
     - key: FOO
       value: foo

@@ -94,7 +94,7 @@ class RunningJob:
             self._stdout_reader = \
                 StreamReader(self, 'stdout', self.proc.stdout)
 
-    async def wait(self) -> True:
+    async def wait(self) -> None:
         self.retcode = await self.proc.wait()
         if self._stderr_reader:
             self.stderr = await self._stderr_reader.join()
@@ -170,20 +170,32 @@ class RunningJob:
         )
 
     async def _report_mail(self, mail):
-        if not (mail['smtp_host'] and mail['to'] and mail['from']):
+        if not ((mail['smtpHost'] or mail['smtp_host']) and
+                mail['to'] and mail['from']):
             return  # email reporting disabled
+
         if self.stdout and self.stderr:
             body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
                     .format(self.stdout, self.stderr))
         else:
             body = self.stdout or self.stderr or '(no output was captured)'
-        logger.debug("smtp: host=%r, port=%r",
-                     mail['smtp_host'], mail['smtp_port'])
-        smtp = aiosmtplib.SMTP(hostname=mail['smtp_host'],
-                               port=mail['smtp_port'])
+
+        if mail['smtpHost']:
+            smtp_host = mail['smtpHost']
+        else:
+            logger.warning("smtp_host is deprecated, was renamed to smtpHost")
+            smtp_host = mail['smtp_host']
+        if mail['smtpPort']:
+            smtp_port = mail['smtpPort']
+        else:
+            logger.warning("smtp_port is deprecated, was renamed to smtpPort")
+            smtp_port = mail['smtp_port']
+
+        logger.debug("smtp: host=%r, port=%r", smtp_host, smtp_port)
+        smtp = aiosmtplib.SMTP(hostname=smtp_host, port=smtp_port)
         await smtp.connect()
         message = MIMEText(body)
         message['From'] = mail['from']
-        message['To'] = mail['from']
+        message['To'] = mail['to']
         message['Subject'] = 'Cron job {!r} failed'.format(self.config.name)
         await smtp.send_message(message)

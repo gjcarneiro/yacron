@@ -19,10 +19,12 @@ _REPORT_DEFAULTS = {
         },
     },
     'mail': {
-        'sender': None,
-        'recipient': None,
-        'smtp_host': None,
-        'smtp_port': 25,
+        'from': None,
+        'to': None,
+        'smtp_host': None,  # deprecated
+        'smtp_port': 25,  # deprecated
+        'smtpHost': None,
+        'smtpPort': 25,
     },
 }
 
@@ -150,7 +152,9 @@ definitions:
           to: {oneOf: [{type: string, format: email}, {type: "null"}]}
           smtp_host: {oneOf: [{type: string}, {type: "null"}]}
           smtp_port: {oneOf: [{type: integer}, {type: "null"}]}
-
+          smtpHost: {oneOf: [{type: string}, {type: "null"}]}
+          smtpPort: {oneOf: [{type: integer}, {type: "null"}]}
+        additionalProperties: false
 ''')
 
 
