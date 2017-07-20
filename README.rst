@@ -141,6 +141,9 @@ email and Sentry (additional reporting methods might be added in the future):
         sentry:
            dsn:
              value: example
+             # Alternatively:
+             # fromFile: /etc/secrets/my-secret-dsn
+             # fromEnvVar: SENTRY_DSN
         mail:
           from: example@foo.com
           to: example@bar.com
