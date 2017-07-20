@@ -5,6 +5,7 @@ import os
 import sys
 from email.mime.text import MIMEText
 from typing import Any, Awaitable, Dict, List, Optional  # noqa
+from enum import Enum
 
 from raven import Client
 from raven_aiohttp import AioHttpTransport
@@ -17,6 +18,11 @@ logger = logging.getLogger('yacron')
 
 def create_task(coro: Awaitable) -> asyncio.Task:
     return asyncio.get_event_loop().create_task(coro)
+
+
+class ReportType(Enum):
+    FAILURE = 1
+    SUCCESS = 2
 
 
 class StreamReader:
@@ -126,21 +132,25 @@ class RunningJob:
 
     async def report_failure(self):
         logger.info("Cron job %s: reporting failure", self.config.name)
-        await self._report_common(self.config.onFailure['report'])
+        await self._report_common(self.config.onFailure['report'],
+                                  ReportType.FAILURE)
 
     async def report_permanent_failure(self):
         logger.info("Cron job %s: reporting permanent failure",
                     self.config.name)
-        await self._report_common(self.config.onPermanentFailure['report'])
+        await self._report_common(self.config.onPermanentFailure['report'],
+                                  ReportType.FAILURE)
 
     async def report_success(self):
         logger.info("Cron job %s: reporting success", self.config.name)
-        await self._report_common(self.config.onSuccess['report'])
+        await self._report_common(self.config.onSuccess['report'],
+                                  ReportType.SUCCESS)
 
-    async def _report_common(self, report_config):
+    async def _report_common(self, report_config: dict,
+                             report_type: ReportType) -> None:
         results = await asyncio.gather(
-            self._report_sentry(report_config['sentry']),
-            self._report_mail(report_config['mail']),
+            self._report_sentry(report_config['sentry'], report_type),
+            self._report_mail(report_config['mail'], report_type),
             return_exceptions=True
         )
         for result in results:
@@ -148,7 +158,7 @@ class RunningJob:
                 logger.error("Problem reporting job %s failure: %s",
                              self.config.name, result)
 
-    async def _report_sentry(self, config):
+    async def _report_sentry(self, config, report_type: ReportType):
         if config['dsn']['value']:
             dsn = config['dsn']['value']
         elif config['dsn']['fromFile']:
@@ -163,6 +173,15 @@ class RunningJob:
                     .format(self.stdout, self.stderr))
         else:
             body = self.stdout or self.stderr or '(no output was captured)'
+
+        if report_type == ReportType.SUCCESS:
+            headline = ('Cron job {!r} completed'
+                        .format(self.config.name))
+        elif report_type == ReportType.FAILURE:
+            headline = ('Cron job {!r} failed'
+                        .format(self.config.name))
+        body = "{}\n\n{}".format(headline, body)
+
         client = Client(transport=AioHttpTransport,
                         dsn=dsn,
                         string_max_length=4096)
@@ -171,6 +190,7 @@ class RunningJob:
             'exit_code': self.retcode,
             'command': self.config.command,
             'shell': self.config.shell,
+            'success': True if report_type == ReportType.SUCCESS else False,
         }
         logger.debug("sentry body: %r", body)
         client.captureMessage(
@@ -178,7 +198,7 @@ class RunningJob:
             extra=extra,
         )
 
-    async def _report_mail(self, mail):
+    async def _report_mail(self, mail, report_type: ReportType):
         if not ((mail['smtpHost'] or mail['smtp_host']) and
                 mail['to'] and mail['from']):
             return  # email reporting disabled
@@ -206,5 +226,12 @@ class RunningJob:
         message = MIMEText(body)
         message['From'] = mail['from']
         message['To'] = mail['to']
-        message['Subject'] = 'Cron job {!r} failed'.format(self.config.name)
+        if report_type == ReportType.SUCCESS:
+            message['Subject'] = ('Cron job {!r} completed'
+                                  .format(self.config.name))
+        elif report_type == ReportType.FAILURE:
+            message['Subject'] = ('Cron job {!r} failed'
+                                  .format(self.config.name))
+        else:
+            raise AssertionError
         await smtp.send_message(message)
