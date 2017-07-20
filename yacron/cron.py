@@ -4,6 +4,7 @@ from collections import defaultdict, OrderedDict
 import asyncio
 import asyncio.subprocess
 from typing import Dict, Any, Optional, Awaitable, List, Dict  # noqa
+import sys
 
 from yacron.config import parse_config, JobConfig
 from yacron.job import RunningJob
@@ -46,13 +47,24 @@ class Cron:
         self._wait_for_running_jobs_task = None  # type: Optional[asyncio.Task]
         self._stop_event = asyncio.Event()
         self.retry_state = {}  # type: Dict[str, JobRetryState]
+        try:
+            self.update_config()
+        except FileNotFoundError:
+            logger.error("Config file %r not found", config_arg)
+            sys.exit(66)
+        except Exception as exc:
+            logger.exception("Error in a config file: %s", exc)
+            sys.exit(65)
 
     async def run(self) -> None:
         self._wait_for_running_jobs_task = \
             create_task(self._wait_for_running_jobs())
 
         while not self._stop_event.is_set():
-            self.update_config()
+            try:
+                self.update_config()
+            except Exception as exc:
+                logger.exception("Error in a config file: %s", exc)
             await self.spawn_jobs()
             sleep_interval = next_sleep_interval()
             logger.debug("Will sleep for %.1f seconds", sleep_interval)
@@ -77,12 +89,8 @@ class Cron:
         self._stop_event.set()
 
     def update_config(self) -> None:
-        try:
-            config = parse_config(self.config_arg)
-        except Exception as exc:
-            logger.exception("Error in a config file: %s", exc)
-        else:
-            self.cron_jobs = OrderedDict((job.name, job) for job in config)
+        config = parse_config(self.config_arg)
+        self.cron_jobs = OrderedDict((job.name, job) for job in config)
 
     async def spawn_jobs(self) -> None:
         now = datetime.datetime.now()
