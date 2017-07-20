@@ -186,30 +186,32 @@ class Cron:
                      job.config.name, retry)
         if not retry['maximumRetries']:
             await job.report_permanent_failure()
-        else:
-            try:
-                state = self.retry_state[job.config.name]
-            except KeyError:
-                state = JobRetryState(retry['initialDelay'])
-                self.retry_state[job.config.name] = state
-            logger.debug("Job %s has been retried %i times",
-                         job.config.name, state.count)
-            if state.task is not None:
-                if state.task.done():
-                    await state.task
-                else:
-                    state.task.cancel()
-            if state.count >= retry['maximumRetries']:
-                await self.cancel_job_retries(job.config.name)
-                await job.report_permanent_failure()
+            return
+
+        # Handle retries...
+        try:
+            state = self.retry_state[job.config.name]
+        except KeyError:
+            state = JobRetryState(retry['initialDelay'])
+            self.retry_state[job.config.name] = state
+        logger.debug("Job %s has been retried %i times",
+                     job.config.name, state.count)
+        if state.task is not None:
+            if state.task.done():
+                await state.task
             else:
-                state.count += 1
-                state.task = create_task(
-                    self.schedule_retry_job(job.config.name, state.delay,
-                                            state.count))
-                multiplier = retry['backoffMultiplier']
-                max_delay = retry['maximumDelay']
-                state.delay = min(state.delay * multiplier, max_delay)
+                state.task.cancel()
+        if state.count >= retry['maximumRetries']:
+            await self.cancel_job_retries(job.config.name)
+            await job.report_permanent_failure()
+        else:
+            state.count += 1
+            state.task = create_task(
+                self.schedule_retry_job(job.config.name, state.delay,
+                                        state.count))
+            multiplier = retry['backoffMultiplier']
+            max_delay = retry['maximumDelay']
+            state.delay = min(state.delay * multiplier, max_delay)
 
     async def schedule_retry_job(self, job_name: str, delay: float,
                                  retry_num: int) -> None:
