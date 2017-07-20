@@ -24,6 +24,10 @@ Features
 
 .. [1] Whereas vixie cron only logs to syslog, requiring a syslog daemon to be running in the background or else you don't get logs!
 
+Status
+--------------
+The project is still in alpha stage: not all features are complete, and you might still find bugs.
+
 Installation
 ------------
 yacron requires Python >= 3.5.  It is advisable to install it in a Python virtual environment, for example:
