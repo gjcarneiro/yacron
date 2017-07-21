@@ -47,7 +47,7 @@ or directory path as the ``-c`` argument.  For example::
     yacron -c /tmp/my-crontab.yaml
 
 This starts yacron (always in the foreground!), reading ``/tmp/my-crontab.yaml``
-as configuration file.
+as configuration file.  If the path is a directory, any ``*.yaml`` or ``*.yml`` files inside this directory are taken as configuration files.
 
 Configuration basics
 ++++++++++++++++++++
@@ -133,6 +133,8 @@ Although cron jobs can still override the defaults, as needed:
         command: echo "zbr"
         shell: /bin/sh
         schedule: "*/5 * * * *"
+
+Note: if the configuration option is a directory and there are multiple configuration files in that directory, then the ``defaults`` section in each configuration file provides default options only for cron jobs inside that same file; the defaults have no effect beyond any individual YAML file.
 
 Reporting
 +++++++++
@@ -276,6 +278,17 @@ For that situation, you can use the ``onPermanentFailure`` option:
           to: example@bar.com
           smtp_host: 127.0.0.1
 
+Concurrency
++++++++++++
+Sometimes it may happen that a cron job takes so long to execute that when the moment its next scheduled execution is reached a previous instance may still be running.  How yacron handles this situation is controlled by the option ``concurrencyPolicy``, which takes one of the following values:
+
+Allow
+    allows concurrently running jobs (default)
+Forbid
+    forbids concurrent runs, skipping next run if previous hasn’t finished yet
+Replace
+    cancels currently running job and replaces it with a new one
+
 Execution timeout
 +++++++++++++++++
 
@@ -312,6 +325,8 @@ before killing it more forcefully.  In Unix systems, we first send a SIGTERM,
 but if the process doesn't exit after ``killTimeout`` seconds (30 by default)
 then we send SIGKILL.  For example, this cron job ignores SIGTERM, and so yacron
 will send it a SIGKILL after half a second:
+
+.. code-block:: yaml
 
   - name: test-03
     command: |
