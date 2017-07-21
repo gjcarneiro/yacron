@@ -130,7 +130,7 @@ _job_schema_dict.update({
 
 CONFIG_SCHEMA = Map({
     Optional("defaults"): Map(_job_defaults_common),
-    "jobs": Map(_job_schema_dict),
+    "jobs": Seq(Map(_job_schema_dict)),
 })
 
 
