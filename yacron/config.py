@@ -4,9 +4,16 @@ from typing import Union  # noqa
 from typing import List
 
 import strictyaml
+from strictyaml import (Bool, EmptyNone, Enum, Float, Int, Map, Optional, Seq,
+                        Str)
+from strictyaml.exceptions import YAMLValidationError
+
 from crontab import CronTab
 
 logger = logging.getLogger('yacron.config')
+
+class ConfigError(Exception):
+    pass
 
 
 _REPORT_DEFAULTS = {
@@ -59,8 +66,6 @@ DEFAULT_CONFIG = {
     'killTimeout': 30,
 }
 
-
-from strictyaml import Map, Int, Float, Str, Enum, Seq, Bool, EmptyNone, Optional
 
 _report_schema = Map({
     "sentry": Map({
@@ -190,7 +195,14 @@ class JobConfig:
 def parse_config_file(path: str) -> List[JobConfig]:
     with open(path, "rt", encoding='utf-8') as stream:
         data = stream.read()
-    doc = strictyaml.load(data, CONFIG_SCHEMA).data
+    try:
+        doc = strictyaml.load(data, CONFIG_SCHEMA).data
+    except YAMLValidationError as ex:
+        if ex.context_mark is not None:
+            ex.context_mark.name = path
+        if ex.problem_mark is not None:
+            ex.problem_mark.name = path
+        raise ConfigError(str(ex))
 
     defaults = doc.get('defaults', {})
     jobs = []
@@ -203,13 +215,22 @@ def parse_config_file(path: str) -> List[JobConfig]:
 
 def parse_config(config_arg: str) -> List[JobConfig]:
     jobs = []
+    configs_with_errors = []
     if os.path.isdir(config_arg):
         for direntry in os.scandir(config_arg):
             _, ext = os.path.splitext(direntry.name)
             if ext in {'.yml', '.yaml'}:
-                config = parse_config_file(direntry.path)
-                jobs.extend(config)
+                try:
+                    config = parse_config_file(direntry.path)
+                except ConfigError as err:
+                    logger.error("Config validation error: %s", str(err))
+                    configs_with_errors.append(direntry.path)
+                else:
+                    jobs.extend(config)
     else:
         config = parse_config_file(config_arg)
         jobs.extend(config)
+    if configs_with_errors:
+        raise ConfigError("Errors in configuration file(s):\n    " +
+                          "\n    ".join(configs_with_errors))
     return jobs
