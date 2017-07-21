@@ -1,12 +1,11 @@
 import logging
 import os.path
 from typing import Union  # noqa
-from typing import List
-from typing import Optional
+from typing import List, Optional
 
 import strictyaml
-from strictyaml import (Bool, EmptyNone, Enum, Float, Int, Map, Optional as Opt, Seq,
-                        Str)
+from strictyaml import Optional as Opt
+from strictyaml import Bool, EmptyNone, Enum, Float, Int, Map, Seq, Str
 from strictyaml.exceptions import YAMLValidationError
 
 from crontab import CronTab
