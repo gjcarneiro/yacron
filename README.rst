@@ -313,6 +313,8 @@ but if the process doesn't exit after ``killTimeout`` seconds (30 by default)
 then we send SIGKILL.  For example, this cron job ignores SIGTERM, and so yacron
 will send it a SIGKILL after half a second:
 
+.. code-block:: yaml
+
   - name: test-03
     command: |
       trap "echo '(ignoring SIGTERM)'" TERM
