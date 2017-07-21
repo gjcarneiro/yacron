@@ -275,3 +275,52 @@ For that situation, you can use the ``onPermanentFailure`` option:
           from: example@foo.com
           to: example@bar.com
           smtp_host: 127.0.0.1
+
+Execution timeout
++++++++++++++++++
+
+(new in version 0.4)
+
+If you have a cron job that may possibly hang sometimes, you can instruct yacron
+to terminate the process after N seconds if it's still running by then, via the
+``executionTimeout`` option.  For example, the following cron job takes 2
+seconds to complete, yacron will terminate it after 1 second:
+
+.. code-block:: yaml
+
+  - name: test-03
+    command: |
+      echo "starting..."
+      sleep 2
+      echo "all done."
+    schedule:
+      minute: "*"
+    captureStderr: true
+    executionTimeout: 1  # in seconds
+
+When terminating a job, it is always a good idea to give that job process some
+time to terminate properly.  For example, it may have opened a file, and even if
+you tell it to shutdown, the process may need a few seconds to flush buffers and
+avoid losing data.
+
+On the other hand, there are times when programs are buggy and simply get stuck,
+refusing to terminate nicely no matter what.  For this reason, yacron always
+checks if a process exited some time after being asked to do so. If it hasn't,
+it tries to forcefully kill the process.  The option ``killTimeout`` option
+indicates how many seconds to wait for the process to gracefully terminate
+before killing it more forcefully.  In Unix systems, we first send a SIGTERM,
+but if the process doesn't exit after ``killTimeout`` seconds (30 by default)
+then we send SIGKILL.  For example, this cron job ignores SIGTERM, and so yacron
+will send it a SIGKILL after half a second:
+
+  - name: test-03
+    command: |
+      trap "echo '(ignoring SIGTERM)'" TERM
+      echo "starting..."
+      sleep 10
+      echo "all done."
+    schedule:
+      minute: "*"
+    captureStderr: true
+    executionTimeout: 1
+    killTimeout: 0.5

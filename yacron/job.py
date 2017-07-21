@@ -3,6 +3,7 @@ import asyncio.subprocess
 import logging
 import os
 import sys
+import time
 from email.mime.text import MIMEText
 from typing import Any, Awaitable, Dict, List, Optional  # noqa
 from enum import Enum
@@ -74,6 +75,7 @@ class RunningJob:
         self._stdout_reader = None  # type: Optional[StreamReader]
         self.stderr = None  # type: Optional[str]
         self.stdout = None  # type: Optional[str]
+        self.execution_deadline = None  # type: Optional[float]
 
     async def start(self) -> None:
         kwargs = {}  # type: Dict[str, Any]
@@ -97,7 +99,12 @@ class RunningJob:
             kwargs['stderr'] = asyncio.subprocess.PIPE
         if self.config.captureStdout:
             kwargs['stdout'] = asyncio.subprocess.PIPE
+        if self.config.executionTimeout:
+            self.execution_deadline = (time.perf_counter() +
+                                       self.config.executionTimeout)
+
         self.proc = await create(*cmd, **kwargs)
+
         if self.config.captureStderr:
             self._stderr_reader = \
                 StreamReader(self, 'stderr', self.proc.stderr)
@@ -108,7 +115,24 @@ class RunningJob:
     async def wait(self) -> None:
         if self.proc is None:
             raise RuntimeError("process is not running")
-        self.retcode = await self.proc.wait()
+        if self.execution_deadline is None:
+            self.retcode = await self.proc.wait()
+        else:
+            timeout = self.execution_deadline - time.perf_counter()
+            try:
+                if timeout > 0:
+                    self.retcode = await asyncio.wait_for(
+                        self.proc.wait(),
+                        timeout,
+                    )
+                else:
+                    raise asyncio.TimeoutError
+            except asyncio.TimeoutError:
+                logger.info("Job %s exceeded its executionTimeout of "
+                            "%.1f seconds, cancelling it...",
+                            self.config.name, self.config.executionTimeout)
+                self.retcode = -100
+                await self.cancel()
         if self._stderr_reader:
             self.stderr = await self._stderr_reader.join()
         if self._stdout_reader:
@@ -128,7 +152,13 @@ class RunningJob:
         if self.proc is None:
             raise RuntimeError("process is not running")
         self.proc.terminate()
-        # TODO: check that it exits after a while, if not send it SIGKILL
+        try:
+            await asyncio.wait_for(self.proc.wait(), self.config.killTimeout)
+        except asyncio.TimeoutError:
+            logger.warning("Job %s did not gracefully terminate after "
+                           "%.1f seconds, killing it...",
+                           self.config.name, self.config.killTimeout)
+            self.proc.kill()
 
     async def report_failure(self):
         logger.info("Cron job %s: reporting failure", self.config.name)

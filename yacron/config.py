@@ -57,6 +57,8 @@ DEFAULT_CONFIG = {
         'report': _REPORT_DEFAULTS,
     },
     'environment': [],
+    'executionTimeout': None,
+    'killTimeout': 30,
 }
 
 CONFIG_SCHEMA = yaml.load('''
@@ -128,6 +130,8 @@ properties:
       properties:
         key: {type: string}
         value: {type: string}
+  executionTimeout: {oneOf: [{type: number}, {type: "null"}]}
+  killTimeout: {type: number}
 required:
   - name
   - command
@@ -218,6 +222,8 @@ class JobConfig:
         self.onPermanentFailure = config.pop('onPermanentFailure')
         self.onSuccess = config.pop('onSuccess')
         self.environment = config.pop('environment')
+        self.executionTimeout = config.pop('executionTimeout')
+        self.killTimeout = config.pop('killTimeout')
 
 
 def parse_config_file(path: str) -> List[JobConfig]:
