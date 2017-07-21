@@ -47,7 +47,7 @@ or directory path as the ``-c`` argument.  For example::
     yacron -c /tmp/my-crontab.yaml
 
 This starts yacron (always in the foreground!), reading ``/tmp/my-crontab.yaml``
-as configuration file.
+as configuration file.  If the path is a directory, any ``*.yaml`` or ``*.yml`` files inside this directory are taken as configuration files.
 
 Configuration basics
 ++++++++++++++++++++
@@ -133,6 +133,8 @@ Although cron jobs can still override the defaults, as needed:
         command: echo "zbr"
         shell: /bin/sh
         schedule: "*/5 * * * *"
+
+Note: if the configuration option is a directory and there are multiple configuration files in that directory, then the ``defaults`` section in each configuration file provides default options only for cron jobs inside that same file; the defaults have no effect beyond any individual YAML file.
 
 Reporting
 +++++++++
