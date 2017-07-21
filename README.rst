@@ -276,6 +276,17 @@ For that situation, you can use the ``onPermanentFailure`` option:
           to: example@bar.com
           smtp_host: 127.0.0.1
 
+Concurrency
++++++++++++
+Sometimes it may happen that a cron job takes so long to execute that when the moment its next scheduled execution is reached a previous instance may still be running.  How yacron handles this situation is controlled by the option ``concurrencyPolicy``, which takes one of the following values:
+
+Allow
+    allows concurrently running jobs (default)
+Forbid
+    forbids concurrent runs, skipping next run if previous hasn’t finished yet
+Replace
+    cancels currently running job and replaces it with a new one
+
 Execution timeout
 +++++++++++++++++
 
