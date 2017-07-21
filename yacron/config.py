@@ -3,12 +3,18 @@ import os.path
 from typing import Union  # noqa
 from typing import List
 
-import jsonschema
+import strictyaml
+from strictyaml import (Bool, EmptyNone, Enum, Float, Int, Map, Optional, Seq,
+                        Str)
+from strictyaml.exceptions import YAMLValidationError
 
-import yaml
 from crontab import CronTab
 
 logger = logging.getLogger('yacron.config')
+
+
+class ConfigError(Exception):
+    pass
 
 
 _REPORT_DEFAULTS = {
@@ -61,115 +67,77 @@ DEFAULT_CONFIG = {
     'killTimeout': 30,
 }
 
-CONFIG_SCHEMA = yaml.load('''
-type: object
-properties:
-  shell: {type: string}
-  name: {type: string}
-  concurrencyPolicy:
-    type: string
-    enum: ['Allow', 'Forbid', 'Replace']
-  command:
-    oneOf:
-      - type: string
-      - type: array
-        items:
-          type: string
-  captureStderr: {type: boolean}
-  captureStdout: {type: boolean}
-  saveLimit:
-    type: integer
-    minimum: 1
-    maximum: 100000
-  failsWhen:
-    type: object
-    properties:
-      producesStdout: {type: boolean}
-      producesStderr: {type: boolean}
-      nonzeroReturn: {type: boolean}
-    additionalProperties: false
-  onFailure:
-    type: object
-    properties:
-      retry:
-        type: object
-        properties:
-          maximumRetries:
-            type: integer
-          initialDelay:
-            type: number
-          maximumDelay:
-            type: number
-          backoffMultiplier:
-            type: number
-      report: {"$ref": "#/definitions/report"}
-  onPermanentFailure:
-    type: object
-    properties:
-      report: {"$ref": "#/definitions/report"}
-  onSuccess:
-    type: object
-    properties:
-      report: {"$ref": "#/definitions/report"}
-  schedule:
-    oneOf:
-      - type: string
-      - type: object
-        properties:
-          minute: {oneOf: [{type: string}, {type: integer}]}
-          hour: {oneOf: [{type: string}, {type: integer}]}
-          dayOfMonth: {oneOf: [{type: string}, {type: integer}]}
-          month: {oneOf: [{type: string}, {type: integer}]}
-          year: {oneOf: [{type: string}, {type: integer}]}
-          dayOfWeek: {oneOf: [{type: string}, {type: integer}]}
-        additionalProperties: false
-  environment:
-    type: array
-    items:
-      type: object
-      properties:
-        key: {type: string}
-        value: {type: string}
-  executionTimeout: {oneOf: [{type: number}, {type: "null"}]}
-  killTimeout: {type: number}
-required:
-  - name
-  - command
-additionalProperties: false
-definitions:
-  report:
-    type: object
-    properties:
-      sentry:
-        type: object
-        properties:
-          dsn:
-            type: object
-            properties:
-              value: {oneOf: [{type: string}, {type: "null"}]}
-              fromFile: {oneOf: [{type: string}, {type: "null"}]}
-              fromEnvVar: {oneOf: [{type: string}, {type: "null"}]}
-            additionalProperties: false
-      mail:
-        type: object
-        properties:
-          from: {oneOf: [{type: string, format: email}, {type: "null"}]}
-          to: {oneOf: [{type: string, format: email}, {type: "null"}]}
-          smtp_host: {oneOf: [{type: string}, {type: "null"}]}
-          smtp_port: {oneOf: [{type: integer}, {type: "null"}]}
-          smtpHost: {oneOf: [{type: string}, {type: "null"}]}
-          smtpPort: {oneOf: [{type: integer}, {type: "null"}]}
-        additionalProperties: false
-''')
 
+_report_schema = Map({
+    "sentry": Map({
+        Optional("dsn"): Map({
+            Optional("value"): Str() | EmptyNone(),
+            Optional("fromFile"): Str() | EmptyNone(),
+            Optional("fromEnvVar"): Str() | EmptyNone(),
+        }),
+    }),
+    Optional("mail"): Map({
+        "from": Str(),
+        "to": Str(),
+        Optional("smtp_host"): Str(),
+        Optional("smtp_port"): Int(),
+        Optional("smtpHost"): Str(),
+        Optional("smtpPort"): Int(),
+    })
+})
 
-# Check that the default config passes the schema validation
-tmp = dict(DEFAULT_CONFIG)
-tmp['name'] = 'foo'
-tmp['command'] = 'true'
-tmp['schedule'] = '* * * * *'
-jsonschema.validate(tmp, CONFIG_SCHEMA)
-del tmp
+_job_defaults_common = {
+    Optional("shell"): Str(),
+    Optional("concurrencyPolicy"): Enum(['Allow', 'Forbid', 'Replace']),
+    Optional("captureStderr"): Bool(),
+    Optional("captureStdout"): Bool(),
+    Optional("saveLimit"): Int(),
+    Optional("failsWhen"): Map({
+        "producesStdout": Bool(),
+        "producesStderr": Bool(),
+        "nonzeroReturn": Bool(),
+    }),
+    Optional("onFailure"): Map({
+        Optional("retry"): Map({
+            "maximumRetries": Int(),
+            "initialDelay": Float(),
+            "maximumDelay": Float(),
+            "backoffMultiplier": Float(),
+        }),
+        Optional("report"): _report_schema,
+    }),
+    Optional("onPermanentFailure"): Map({
+        Optional("report"): _report_schema,
+    }),
+    Optional("onSuccess"): Map({
+        Optional("report"): _report_schema,
+    }),
+    Optional("environment"): Seq(Map({
+        "key": Str(),
+        "value": Str(),
+    })),
+    Optional("executionTimeout"): Float(),
+    Optional("killTimeout"): Float(),
+}
+
+_job_schema_dict = dict(_job_defaults_common)
+_job_schema_dict.update({
+    "name": Str(),
+    "command": Str() | Seq(Str()),
+    "schedule": Str() | Map({
+        Optional("minute"): Str(),
+        Optional("hour"): Str(),
+        Optional("dayOfMonth"): Str(),
+        Optional("month"): Str(),
+        Optional("year"): Str(),
+        Optional("dayOfWeek"): Str(),
+    }),
+})
+
+CONFIG_SCHEMA = Map({
+    Optional("defaults"): Map(_job_defaults_common),
+    "jobs": Seq(Map(_job_schema_dict)),
+})
 
 
 # Slightly modified version of https://stackoverflow.com/a/7205672/2211825
@@ -195,7 +163,6 @@ def mergedicts(dict1, dict2):
 class JobConfig:
 
     def __init__(self, config: dict) -> None:
-        jsonschema.validate(config, CONFIG_SCHEMA)
         self.name = config['name']  # type: str
         self.command = config['command']  # type: Union[str, List[str]]
         self.schedule_unparsed = config.pop('schedule')
@@ -227,8 +194,17 @@ class JobConfig:
 
 
 def parse_config_file(path: str) -> List[JobConfig]:
-    with open(path, "rb") as stream:
-        doc = yaml.load(stream)
+    with open(path, "rt", encoding='utf-8') as stream:
+        data = stream.read()
+    try:
+        doc = strictyaml.load(data, CONFIG_SCHEMA).data
+    except YAMLValidationError as ex:
+        if ex.context_mark is not None:
+            ex.context_mark.name = path
+        if ex.problem_mark is not None:
+            ex.problem_mark.name = path
+        raise ConfigError(str(ex))
+
     defaults = doc.get('defaults', {})
     jobs = []
     for config_job in doc['jobs']:
@@ -240,13 +216,22 @@ def parse_config_file(path: str) -> List[JobConfig]:
 
 def parse_config(config_arg: str) -> List[JobConfig]:
     jobs = []
+    configs_with_errors = []
     if os.path.isdir(config_arg):
         for direntry in os.scandir(config_arg):
             _, ext = os.path.splitext(direntry.name)
             if ext in {'.yml', '.yaml'}:
-                config = parse_config_file(direntry.path)
-                jobs.extend(config)
+                try:
+                    config = parse_config_file(direntry.path)
+                except ConfigError as err:
+                    logger.error("Config validation error: %s", str(err))
+                    configs_with_errors.append(direntry.path)
+                else:
+                    jobs.extend(config)
     else:
         config = parse_config_file(config_arg)
         jobs.extend(config)
+    if configs_with_errors:
+        raise ConfigError("Errors in configuration file(s):\n    " +
+                          "\n    ".join(configs_with_errors))
     return jobs

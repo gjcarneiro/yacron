@@ -1,4 +1,3 @@
-
 defaults:
   shell: /bin/bash
 
@@ -15,8 +14,8 @@ defaults:
   onPermanentFailure:
     report:
       sentry:
-      #   dsn:
-      #     value: example
+         dsn:
+           value:
       mail:
         from: example@foo.com
         to: example@bar.com
@@ -27,8 +26,6 @@ defaults:
       value: foo
     - key: BAR
       value: bar
-
-
 jobs:
   - name: test-01
     command:

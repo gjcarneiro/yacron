@@ -6,7 +6,7 @@ import sys
 from collections import OrderedDict, defaultdict
 from typing import Any, Awaitable, Dict, List, Optional  # noqa
 
-from yacron.config import JobConfig, parse_config
+from yacron.config import JobConfig, parse_config, ConfigError
 from yacron.job import RunningJob
 
 logger = logging.getLogger('yacron')
@@ -51,6 +51,9 @@ class Cron:
         except FileNotFoundError:
             logger.error("Config file %r not found", config_arg)
             sys.exit(66)
+        except ConfigError as err:
+            logger.error("Config validation error: %s", str(err))
+            sys.exit(65)
         except Exception as exc:
             logger.exception("Error in a config file: %s", exc)
             sys.exit(65)
