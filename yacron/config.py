@@ -12,6 +12,7 @@ from crontab import CronTab
 
 logger = logging.getLogger('yacron.config')
 
+
 class ConfigError(Exception):
     pass
 
