@@ -2,9 +2,10 @@ import logging
 import os.path
 from typing import Union  # noqa
 from typing import List
+from typing import Optional
 
 import strictyaml
-from strictyaml import (Bool, EmptyNone, Enum, Float, Int, Map, Optional, Seq,
+from strictyaml import (Bool, EmptyNone, Enum, Float, Int, Map, Optional as Opt, Seq,
                         Str)
 from strictyaml.exceptions import YAMLValidationError
 
@@ -70,54 +71,54 @@ DEFAULT_CONFIG = {
 
 _report_schema = Map({
     "sentry": Map({
-        Optional("dsn"): Map({
-            Optional("value"): Str() | EmptyNone(),
-            Optional("fromFile"): Str() | EmptyNone(),
-            Optional("fromEnvVar"): Str() | EmptyNone(),
+        Opt("dsn"): Map({
+            Opt("value"): Str() | EmptyNone(),
+            Opt("fromFile"): Str() | EmptyNone(),
+            Opt("fromEnvVar"): Str() | EmptyNone(),
         }),
     }),
-    Optional("mail"): Map({
-        "from": Str(),
-        "to": Str(),
-        Optional("smtp_host"): Str(),
-        Optional("smtp_port"): Int(),
-        Optional("smtpHost"): Str(),
-        Optional("smtpPort"): Int(),
+    Opt("mail"): Map({
+        "from": EmptyNone() | Str(),
+        "to": EmptyNone() | Str(),
+        Opt("smtp_host"): Str(),
+        Opt("smtp_port"): Int(),
+        Opt("smtpHost"): Str(),
+        Opt("smtpPort"): Int(),
     })
 })
 
 _job_defaults_common = {
-    Optional("shell"): Str(),
-    Optional("concurrencyPolicy"): Enum(['Allow', 'Forbid', 'Replace']),
-    Optional("captureStderr"): Bool(),
-    Optional("captureStdout"): Bool(),
-    Optional("saveLimit"): Int(),
-    Optional("failsWhen"): Map({
+    Opt("shell"): Str(),
+    Opt("concurrencyPolicy"): Enum(['Allow', 'Forbid', 'Replace']),
+    Opt("captureStderr"): Bool(),
+    Opt("captureStdout"): Bool(),
+    Opt("saveLimit"): Int(),
+    Opt("failsWhen"): Map({
         "producesStdout": Bool(),
         "producesStderr": Bool(),
         "nonzeroReturn": Bool(),
     }),
-    Optional("onFailure"): Map({
-        Optional("retry"): Map({
+    Opt("onFailure"): Map({
+        Opt("retry"): Map({
             "maximumRetries": Int(),
             "initialDelay": Float(),
             "maximumDelay": Float(),
             "backoffMultiplier": Float(),
         }),
-        Optional("report"): _report_schema,
+        Opt("report"): _report_schema,
     }),
-    Optional("onPermanentFailure"): Map({
-        Optional("report"): _report_schema,
+    Opt("onPermanentFailure"): Map({
+        Opt("report"): _report_schema,
     }),
-    Optional("onSuccess"): Map({
-        Optional("report"): _report_schema,
+    Opt("onSuccess"): Map({
+        Opt("report"): _report_schema,
     }),
-    Optional("environment"): Seq(Map({
+    Opt("environment"): Seq(Map({
         "key": Str(),
         "value": Str(),
     })),
-    Optional("executionTimeout"): Float(),
-    Optional("killTimeout"): Float(),
+    Opt("executionTimeout"): Float(),
+    Opt("killTimeout"): Float(),
 }
 
 _job_schema_dict = dict(_job_defaults_common)
@@ -125,17 +126,17 @@ _job_schema_dict.update({
     "name": Str(),
     "command": Str() | Seq(Str()),
     "schedule": Str() | Map({
-        Optional("minute"): Str(),
-        Optional("hour"): Str(),
-        Optional("dayOfMonth"): Str(),
-        Optional("month"): Str(),
-        Optional("year"): Str(),
-        Optional("dayOfWeek"): Str(),
+        Opt("minute"): Str(),
+        Opt("hour"): Str(),
+        Opt("dayOfMonth"): Str(),
+        Opt("month"): Str(),
+        Opt("year"): Str(),
+        Opt("dayOfWeek"): Str(),
     }),
 })
 
 CONFIG_SCHEMA = Map({
-    Optional("defaults"): Map(_job_defaults_common),
+    Opt("defaults"): Map(_job_defaults_common),
     "jobs": Seq(Map(_job_schema_dict)),
 })
 
@@ -196,6 +197,11 @@ class JobConfig:
 def parse_config_file(path: str) -> List[JobConfig]:
     with open(path, "rt", encoding='utf-8') as stream:
         data = stream.read()
+    return parse_config_string(data, path)
+
+
+def parse_config_string(data: str, path: Optional[str] = None,
+                        ) -> List[JobConfig]:
     try:
         doc = strictyaml.load(data, CONFIG_SCHEMA).data
     except YAMLValidationError as ex:

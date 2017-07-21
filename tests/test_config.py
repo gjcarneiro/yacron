@@ -24,3 +24,114 @@ def test_mergedicts_lists():
         {"env": [{'key': 'FOO'}]},
         {"env": [{'key': 'BAR'}]}
     )) == {"env": [{'key': 'FOO'}, {'key': 'BAR'}]})
+
+
+def test_simple_config1():
+    jobs = config.parse_config_string('''
+defaults:
+  shell: /bin/bash
+
+jobs:
+  - name: test-03
+    command: |
+      trap "echo '(ignoring SIGTERM)'" TERM
+      echo "starting..."
+      sleep 10
+      echo "all done."
+    schedule:
+      minute: "*"
+    captureStderr: true
+    executionTimeout: 1
+    killTimeout: 0.5
+                       ''')
+    assert len(jobs) == 1
+    job = jobs[0]
+    assert job.name == 'test-03'
+    assert job.command == ('trap "echo \'(ignoring SIGTERM)\'" TERM\n'
+                           'echo "starting..."\n'
+                           'sleep 10\n'
+                           'echo "all done."\n')
+    assert job.schedule_unparsed == {'minute': '*'}
+    assert job.captureStderr is True
+    assert job.captureStdout is False
+    assert job.executionTimeout == 1
+    assert job.killTimeout == 0.5
+
+
+def test_config_default_report():
+    jobs = config.parse_config_string('''
+defaults:
+  onFailure:
+    report:
+      mail:
+        from: example@foo.com
+        to: example@bar.com
+        smtpHost: 127.0.0.1
+        smtpPort: 10025
+
+jobs:
+  - name: test-03
+    command: foo
+    schedule:
+      minute: "*"
+    captureStderr: true
+                       ''')
+    assert len(jobs) == 1
+    job = jobs[0]
+    assert job.onFailure == (
+        {'report': {'mail': {'from': 'example@foo.com',
+                             'smtpHost': '127.0.0.1',
+                             'smtpPort': 10025,
+                             'smtp_host': None,
+                             'smtp_port': 25,
+                             'to': 'example@bar.com'},
+                    'sentry': {'dsn': {'fromEnvVar': None,
+                                       'fromFile': None,
+                                       'value': None}}},
+         'retry': {'backoffMultiplier': 2,
+                   'initialDelay': 1,
+                   'maximumDelay': 300,
+                   'maximumRetries': 0}})
+
+
+def test_config_default_report_override():
+    # even if the default says send email on error, it should be possible for
+    # specific jobs to override the default and disable sending email.
+    jobs = config.parse_config_string('''
+defaults:
+  onFailure:
+    report:
+      mail:
+        from: example@foo.com
+        to: example@bar.com
+        smtpHost: 127.0.0.1
+        smtpPort: 10025
+
+jobs:
+  - name: test-03
+    command: foo
+    schedule:
+      minute: "*"
+    captureStderr: true
+    onFailure:
+      report:
+        mail:
+          to:
+          from:
+                       ''')
+    assert len(jobs) == 1
+    job = jobs[0]
+    assert job.onFailure == (
+        {'report': {'mail': {'from': None,
+                             'smtpHost': '127.0.0.1',
+                             'smtpPort': 10025,
+                             'smtp_host': None,
+                             'smtp_port': 25,
+                             'to': None},
+                    'sentry': {'dsn': {'fromEnvVar': None,
+                                       'fromFile': None,
+                                       'value': None}}},
+         'retry': {'backoffMultiplier': 2,
+                   'initialDelay': 1,
+                   'maximumDelay': 300,
+                   'maximumRetries': 0}})
