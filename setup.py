@@ -10,13 +10,12 @@ with open('README.rst') as readme_file:
 
 
 requirements = [
-    "PyYAML",
+    "strictyaml>=0.7",
     "crontab",
     "aiohttp",
     "raven",
     "raven-aiohttp",
     "aiosmtplib",
-    'jsonschema',
 ]
 
 
