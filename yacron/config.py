@@ -6,7 +6,7 @@ from typing import List, Optional
 import strictyaml
 from strictyaml import Optional as Opt
 from strictyaml import Bool, EmptyNone, Enum, Float, Int, Map, Seq, Str
-from strictyaml.exceptions import YAMLValidationError
+from strictyaml.exceptions import StrictYAMLError
 
 from crontab import CronTab
 
@@ -203,7 +203,7 @@ def parse_config_string(data: str, path: Optional[str] = None,
                         ) -> List[JobConfig]:
     try:
         doc = strictyaml.load(data, CONFIG_SCHEMA).data
-    except YAMLValidationError as ex:
+    except StrictYAMLError as ex:
         if ex.context_mark is not None:
             ex.context_mark.name = path
         if ex.problem_mark is not None:
