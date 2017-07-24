@@ -28,11 +28,14 @@ test_requirements = [
     'pytest',
 ]
 
+with open('HISTORY.rst') as history_file:
+    history = history_file.read()
+
 setup(
     name='yacron',
     version='0.1.0',
     description="A modern Cron replacement that is Docker-friendly",
-    long_description=readme,
+    long_description=(readme + '\n\n' + history),
     author="Gustavo Carneiro",
     author_email='gustavocarneiro@gambitresearch.com',
     url='https://github.com/gjcarneiro/yacron',
