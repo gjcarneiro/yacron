@@ -221,7 +221,7 @@ def parse_config_string(data: str, path: Optional[str] = None,
 
 def parse_config(config_arg: str) -> List[JobConfig]:
     jobs = []
-    configs_with_errors = []
+    config_errors = {}
     if os.path.isdir(config_arg):
         for direntry in os.scandir(config_arg):
             _, ext = os.path.splitext(direntry.name)
@@ -229,14 +229,12 @@ def parse_config(config_arg: str) -> List[JobConfig]:
                 try:
                     config = parse_config_file(direntry.path)
                 except ConfigError as err:
-                    logger.error("Config validation error: %s", str(err))
-                    configs_with_errors.append(direntry.path)
+                    config_errors[direntry.path] = str(err)
                 else:
                     jobs.extend(config)
     else:
         config = parse_config_file(config_arg)
         jobs.extend(config)
-    if configs_with_errors:
-        raise ConfigError("Errors in configuration file(s):\n    " +
-                          "\n    ".join(configs_with_errors))
+    if config_errors:
+        raise ConfigError("\n---".join(config_errors.values()))
     return jobs

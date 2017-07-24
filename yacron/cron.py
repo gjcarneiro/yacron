@@ -65,6 +65,9 @@ class Cron:
         while not self._stop_event.is_set():
             try:
                 self.update_config()
+            except ConfigError as err:
+                logger.error("Error in configuration file(s), so not updating "
+                             "any of the config.:\n%s", str(err))
             except Exception as exc:
                 logger.exception("Error in a config file: %s", exc)
             await self.spawn_jobs()
