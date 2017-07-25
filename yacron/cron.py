@@ -36,8 +36,8 @@ class JobRetryState:
 
 class Cron:
 
-    def __init__(self, config_arg: str, *,
-                 config_yaml: str=None
+    def __init__(self, config_arg: Optional[str], *,
+                 config_yaml: Optional[str]=None
                  ) -> None:
         # list of cron jobs we /want/ to run
         self.cron_jobs = OrderedDict()  # type: Dict[str, JobConfig]
