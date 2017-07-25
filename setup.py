@@ -26,6 +26,7 @@ setup_requirements = [
 
 test_requirements = [
     'pytest',
+    'pytest-cov',
 ]
 
 with open('HISTORY.rst') as history_file:
