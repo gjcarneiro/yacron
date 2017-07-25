@@ -25,8 +25,9 @@ setup_requirements = [
 ]
 
 test_requirements = [
-    'pytest',
     'pytest-cov',
+    # https://github.com/pytest-dev/pytest-runner/issues/11#issuecomment-190355698
+    'pytest',  # needs to be last
 ]
 
 with open('HISTORY.rst') as history_file:
