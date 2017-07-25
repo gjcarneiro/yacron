@@ -8,6 +8,8 @@ A modern Cron replacement that is Docker-friendly
 
 * Free software: MIT license
 
+.. image:: https://travis-ci.org/gjcarneiro/yacron.svg?branch=master
+    :target: https://travis-ci.org/gjcarneiro/yacron
 
 Features
 --------
