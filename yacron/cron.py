@@ -6,7 +6,8 @@ import sys
 from collections import OrderedDict, defaultdict
 from typing import Any, Awaitable, Dict, List, Optional  # noqa
 
-from yacron.config import JobConfig, parse_config, ConfigError
+from yacron.config import (JobConfig, parse_config, ConfigError,
+                           parse_config_string)
 from yacron.job import RunningJob
 
 logger = logging.getLogger('yacron')
@@ -35,7 +36,9 @@ class JobRetryState:
 
 class Cron:
 
-    def __init__(self, config_arg: str) -> None:
+    def __init__(self, config_arg: str, *,
+                 config_yaml: str=None
+                 ) -> None:
         # list of cron jobs we /want/ to run
         self.cron_jobs = OrderedDict()  # type: Dict[str, JobConfig]
         # list of cron jobs already running
@@ -43,20 +46,27 @@ class Cron:
         self.running_jobs = \
             defaultdict(list)  # type: Dict[str, List[RunningJob]]
         self.config_arg = config_arg
+        if config_arg is not None:
+            try:
+                self.update_config()
+            except FileNotFoundError:
+                logger.error("Config file %r not found", config_arg)
+                sys.exit(66)
+            except ConfigError as err:
+                logger.error("Config validation error: %s", str(err))
+                sys.exit(65)
+            except Exception as exc:
+                logger.exception("Error in a config file: %s", exc)
+                sys.exit(65)
+        if config_yaml is not None:
+            # config_yaml is for unit testing
+            config = parse_config_string(config_yaml)
+            self.cron_jobs = OrderedDict((job.name, job) for job in config)
+
         self._wait_for_running_jobs_task = None  # type: Optional[asyncio.Task]
         self._stop_event = asyncio.Event()
+        self._jobs_running = asyncio.Event()
         self.retry_state = {}  # type: Dict[str, JobRetryState]
-        try:
-            self.update_config()
-        except FileNotFoundError:
-            logger.error("Config file %r not found", config_arg)
-            sys.exit(66)
-        except ConfigError as err:
-            logger.error("Config validation error: %s", str(err))
-            sys.exit(65)
-        except Exception as exc:
-            logger.exception("Error in a config file: %s", exc)
-            sys.exit(65)
 
     async def run(self) -> None:
         self._wait_for_running_jobs_task = \
@@ -94,6 +104,8 @@ class Cron:
         self._stop_event.set()
 
     def update_config(self) -> None:
+        if self.config_arg is None:
+            return
         config = parse_config(self.config_arg)
         self.cron_jobs = OrderedDict((job.name, job) for job in config)
 
@@ -127,6 +139,7 @@ class Cron:
         await running_job.start()
         self.running_jobs[job.name].append(running_job)
         logger.info("Job %s spawned", job.name)
+        self._jobs_running.set()
 
     # continually watches for the running jobs, clean them up when they exit
     async def _wait_for_running_jobs(self) -> None:
@@ -139,8 +152,12 @@ class Cron:
                         if job not in wait_tasks:
                             wait_tasks[job] = create_task(job.wait())
                 if not wait_tasks:
-                    await asyncio.sleep(1)
+                    try:
+                        await asyncio.wait_for(self._jobs_running.wait(), 1)
+                    except asyncio.TimeoutError:
+                        pass
                     continue
+                self._jobs_running.clear()
                 # wait for at least one task with timeout
                 done_tasks, _ = await asyncio.wait(
                     wait_tasks.values(),

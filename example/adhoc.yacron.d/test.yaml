@@ -71,5 +71,3 @@ jobs:
     captureStderr: true
     executionTimeout: 1
     killTimeout: 0.5
-    schedule: "* * * * *"
-
