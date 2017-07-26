@@ -15,7 +15,7 @@ WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
 
 
 def get_now() -> datetime.datetime:
-    return datetime.datetime.utcnow()
+    return datetime.datetime.utcnow()  # pragma: no cover
 
 
 def next_sleep_interval() -> float:
@@ -127,7 +127,7 @@ class Cron:
                 for running_job in self.running_jobs[job.name]:
                     await running_job.cancel()
             else:
-                raise AssertionError
+                raise AssertionError  # pragma: no cover
         logger.info("Starting job %s", job.name)
         running_job = RunningJob(job)
         await running_job.start()
@@ -165,7 +165,7 @@ class Cron:
                     task = wait_tasks.pop(job)
                     try:
                         task.result()
-                    except Exception:
+                    except Exception:  # pragma: no cover
                         logger.exception("zbr")
 
                     jobs_list = self.running_jobs[job.config.name]
@@ -183,7 +183,7 @@ class Cron:
                         await self.handle_job_failure(job)
                     else:
                         await self.handle_job_success(job)
-            except Exception:
+            except Exception:  # pragma: no cover
                 logger.exception("blah")
                 await asyncio.sleep(1)
 
