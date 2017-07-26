@@ -2,7 +2,6 @@ import asyncio
 import asyncio.subprocess
 import datetime
 import logging
-import sys
 from collections import OrderedDict, defaultdict
 from typing import Any, Awaitable, Dict, List, Optional  # noqa
 
