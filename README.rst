@@ -10,6 +10,9 @@ A modern Cron replacement that is Docker-friendly
 
 .. image:: https://travis-ci.org/gjcarneiro/yacron.svg?branch=master
     :target: https://travis-ci.org/gjcarneiro/yacron
+.. image:: https://coveralls.io/repos/github/gjcarneiro/yacron/badge.svg?branch=master
+    :target: https://coveralls.io/github/gjcarneiro/yacron?branch=master
+
 
 Features
 --------
