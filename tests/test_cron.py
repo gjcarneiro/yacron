@@ -27,7 +27,7 @@ class TracingRunningJob(RunningJob):
     async def cancel(self) -> None:
         self._TRACE.put_nowait((time.perf_counter(), "cancel", self))
         await super().cancel()
-        self._TRACE.put_nowait((time.perf_counter(), "canceled", self))
+        self._TRACE.put_nowait((time.perf_counter(), "cancelled", self))
 
     async def report_failure(self):
         self._TRACE.put_nowait((time.perf_counter(), "report_failure", self))
@@ -151,3 +151,59 @@ def test_fail_retry(monkeypatch):
         (3, 'create'), (3, 'start'), (3, 'started'),
         (3, 'wait'), (3, 'waited'),
         (3, 'report_failure'), (3, 'report_permanent_failure')]
+
+
+JOB_THAT_HANGS = '''
+jobs:
+  - name: test
+    command: |
+      trap "echo '(ignoring SIGTERM)'" TERM
+      echo "starting..."
+      sleep 10
+      echo "all done."
+    schedule: "* * * * *"
+    captureStdout: true
+    executionTimeout: 0.25
+    killTimeout: 0.25
+'''
+
+
+def test_execution_timeout(monkeypatch):
+    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+    cron = yacron.cron.Cron(None, config_yaml=JOB_THAT_HANGS)
+
+    events = []
+    jobs_stdout = {}
+
+    async def wait_and_quit():
+        known_jobs = {}
+        while True:
+            ts, event, job = await TracingRunningJob._TRACE.get()
+            try:
+                jobnum = known_jobs[job]
+            except KeyError:
+                if known_jobs:
+                    jobnum = max(known_jobs.values()) + 1
+                else:
+                    jobnum = 1
+                known_jobs[job] = jobnum
+            print(ts, event, jobnum)
+            events.append((jobnum, event))
+            if jobnum == 1 and event == 'report_permanent_failure':
+                jobs_stdout[jobnum] = job.stdout
+                break
+        cron.signal_shutdown()
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(
+        wait_and_quit(),
+        cron.run()))
+    assert events == [
+        # initial attempt
+        (1, 'create'),
+        (1, 'start'), (1, 'started'),
+        (1, 'wait'),
+        (1, 'cancel'), (1, 'cancelled'),
+        (1, 'waited'),
+        (1, 'report_failure'), (1, 'report_permanent_failure')]
+    assert jobs_stdout[1] == 'starting...\n'
