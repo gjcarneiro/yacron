@@ -8,9 +8,9 @@ A modern Cron replacement that is Docker-friendly
 
 * Free software: MIT license
 
-.. image:: https://travis-ci.org/gjcarneiro/yacron.svg?branch=master
+.. image:: https://travis-ci.org/gjcarneiro/yacron.svg?branch=master&maxAge=600
     :target: https://travis-ci.org/gjcarneiro/yacron
-.. image:: https://coveralls.io/repos/github/gjcarneiro/yacron/badge.svg?branch=master
+.. image:: https://coveralls.io/repos/github/gjcarneiro/yacron/badge.svg?branch=master&maxAge=600
     :target: https://coveralls.io/github/gjcarneiro/yacron?branch=master
 
 
