@@ -48,17 +48,7 @@ class Cron:
             defaultdict(list)  # type: Dict[str, List[RunningJob]]
         self.config_arg = config_arg
         if config_arg is not None:
-            try:
-                self.update_config()
-            except FileNotFoundError:
-                logger.error("Config file %r not found", config_arg)
-                sys.exit(66)
-            except ConfigError as err:
-                logger.error("Config validation error: %s", str(err))
-                sys.exit(65)
-            except Exception as exc:
-                logger.exception("Error in a config file: %s", exc)
-                sys.exit(65)
+            self.update_config()
         if config_yaml is not None:
             # config_yaml is for unit testing
             config = parse_config_string(config_yaml)

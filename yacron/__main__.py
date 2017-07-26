@@ -5,7 +5,7 @@ import logging
 import signal
 import sys
 
-from yacron.cron import Cron
+from yacron.cron import Cron, ConfigError
 
 
 def main():
@@ -17,8 +17,13 @@ def main():
 
     logging.basicConfig(level=getattr(logging, args.log_level))
     # logging.getLogger("asyncio").setLevel(logging.WARNING)
+    logger = logging.getLogger("yacron")
 
-    cron = Cron(args.config)
+    try:
+        cron = Cron(args.config)
+    except ConfigError as err:
+        logger.error("Configuration error: %s", str(err))
+        sys.exit(1)
 
     if sys.platform == "win32":
         loop = asyncio.ProactorEventLoop()

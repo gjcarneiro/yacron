@@ -230,11 +230,17 @@ def parse_config(config_arg: str) -> List[JobConfig]:
                     config = parse_config_file(direntry.path)
                 except ConfigError as err:
                     config_errors[direntry.path] = str(err)
+                except OSError as ex:
+                    config_errors[config_arg] = str(ex)
                 else:
                     jobs.extend(config)
     else:
-        config = parse_config_file(config_arg)
-        jobs.extend(config)
+        try:
+            config = parse_config_file(config_arg)
+        except OSError as ex:
+            config_errors[config_arg] = str(ex)
+        else:
+            jobs.extend(config)
     if config_errors:
         raise ConfigError("\n---".join(config_errors.values()))
     return jobs

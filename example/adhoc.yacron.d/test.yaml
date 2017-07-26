@@ -68,6 +68,7 @@ jobs:
       echo "all done."
     schedule:
       minute: "*"
+    # schedule: "* * * * *"
     captureStderr: true
     executionTimeout: 1
     killTimeout: 0.5
