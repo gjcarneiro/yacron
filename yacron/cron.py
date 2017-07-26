@@ -13,8 +13,10 @@ from yacron.job import RunningJob
 logger = logging.getLogger('yacron')
 WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
 
+
 def get_now() -> datetime.datetime:
     return datetime.datetime.utcnow()
+
 
 def next_sleep_interval() -> float:
     now = get_now()

@@ -217,3 +217,81 @@ def test_execution_timeout(monkeypatch):
         (1, 'waited'),
         (1, 'report_failure'), (1, 'report_permanent_failure')]
     assert jobs_stdout[1] == 'starting...\n'
+
+
+CONCURRENT_JOB = '''
+jobs:
+  - name: test
+    command: |
+      echo "starting..."
+      sleep 0.5
+      echo "all done."
+    schedule: "* * * * *"
+    captureStdout: true
+    concurrencyPolicy: {policy}
+'''
+
+
+@pytest.mark.parametrize("policy,expected_numjobs,expected_max_running", [
+    ('Allow', 2, 2),
+    ('Forbid', 1, 1),
+    ('Replace', 2, 1),
+])
+def test_concurrency_policy(monkeypatch, policy,
+                            expected_numjobs, expected_max_running):
+    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+    START_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
+                                   minute=0, second=59, microsecond=750000)
+
+    t0 = time.perf_counter()
+    def get_now():
+        return (START_TIME +
+                datetime.timedelta(seconds=(time.perf_counter() - t0)))
+    monkeypatch.setattr("yacron.cron.get_now", get_now)
+
+    cron = yacron.cron.Cron(
+        None,
+        config_yaml=CONCURRENT_JOB.format(policy=policy),
+    )
+
+    events = []
+    jobs_stdout = {}
+    numjobs = 0
+    max_running = 0
+
+    async def wait_and_quit():
+        nonlocal numjobs, max_running
+        known_jobs = {}
+        pending_jobs = set()
+        running_jobs = set()
+        previous_ts = None
+        while not (known_jobs and not pending_jobs):
+            ts, event, job = await TracingRunningJob._TRACE.get()
+            try:
+                jobnum = known_jobs[job]
+            except KeyError:
+                if known_jobs:
+                    jobnum = max(known_jobs.values()) + 1
+                else:
+                    jobnum = 1
+                known_jobs[job] = jobnum
+                pending_jobs.add(jobnum)
+                running_jobs.add(jobnum)
+                numjobs += 1
+            print(ts, event, jobnum)
+            events.append((jobnum, event))
+            if event in {'report_success', 'report_permanent_failure'}:
+                pending_jobs.discard(jobnum)
+            if event in {'report_success', 'report_permanent_failure',
+                         'cancelled'}:
+                running_jobs.discard(jobnum)
+            max_running = max(len(running_jobs), max_running)
+        cron.signal_shutdown()
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(
+        wait_and_quit(),
+        cron.run()))
+    import pprint
+    pprint.pprint(events)
+    assert (numjobs, max_running) == (expected_numjobs, expected_max_running)
