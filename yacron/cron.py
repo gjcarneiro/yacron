@@ -13,9 +13,11 @@ from yacron.job import RunningJob
 logger = logging.getLogger('yacron')
 WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
 
+def get_now() -> datetime.datetime:
+    return datetime.datetime.utcnow()
 
 def next_sleep_interval() -> float:
-    now = datetime.datetime.utcnow()
+    now = get_now()
     target = (datetime.datetime(now.year, now.month, now.day,
                                 now.hour, now.minute) +
               WAKEUP_INTERVAL)
@@ -100,7 +102,7 @@ class Cron:
         self.cron_jobs = OrderedDict((job.name, job) for job in config)
 
     async def spawn_jobs(self) -> None:
-        now = datetime.datetime.now()
+        now = get_now()
         for job in self.cron_jobs.values():
             if job.schedule.test(now):
                 logger.debug("Job %s (%s) is scheduled for now",

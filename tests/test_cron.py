@@ -1,9 +1,19 @@
 import time
+import datetime
 import yacron.cron
 from yacron.job import RunningJob
 from yacron.config import JobConfig
 import asyncio
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def fixed_current_time(monkeypatch):
+    FIXED_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
+                                   minute=0, second=0)
+    def get_now():
+        return FIXED_TIME
+    monkeypatch.setattr("yacron.cron.get_now", get_now)
 
 
 class TracingRunningJob(RunningJob):
