@@ -72,8 +72,8 @@ class Cron:
             except ConfigError as err:
                 logger.error("Error in configuration file(s), so not updating "
                              "any of the config.:\n%s", str(err))
-            except Exception as exc:
-                logger.exception("Error in a config file: %s", exc)
+            except Exception as exc:  # pragma: nocover
+                logger.exception("please report this as a bug (1)")
             await self.spawn_jobs()
             sleep_interval = next_sleep_interval()
             logger.debug("Will sleep for %.1f seconds", sleep_interval)
@@ -83,14 +83,10 @@ class Cron:
                 pass
 
         logger.info("Shutting down (after currently running jobs finish)...")
-
-        for state in self.retry_state.values():
-            if state.task is not None:
-                if state.task.done():
-                    await state.task
-                else:
-                    state.task.cancel()
-
+        while self.retry_state:
+            cancel_all = [self.cancel_job_retries(name)
+                          for name in self.retry_state]
+            await asyncio.gather(*cancel_all)
         await self._wait_for_running_jobs_task
 
     def signal_shutdown(self) -> None:
@@ -166,7 +162,7 @@ class Cron:
                     try:
                         task.result()
                     except Exception:  # pragma: no cover
-                        logger.exception("zbr")
+                        logger.exception("please report this as a bug (2)")
 
                     jobs_list = self.running_jobs[job.config.name]
                     jobs_list.remove(job)
@@ -184,7 +180,7 @@ class Cron:
                     else:
                         await self.handle_job_success(job)
             except Exception:  # pragma: no cover
-                logger.exception("blah")
+                logger.exception("please report this as a bug (3)")
                 await asyncio.sleep(1)
 
     async def handle_job_failure(self, job: RunningJob) -> None:

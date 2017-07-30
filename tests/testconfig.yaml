@@ -1,0 +1,15 @@
+defaults:
+  shell: /bin/bash
+
+jobs:
+  - name: test-03
+    command: |
+      trap "echo '(ignoring SIGTERM)'" TERM
+      echo "starting..."
+      sleep 10
+      echo "all done."
+    schedule:
+      minute: "*"
+    captureStderr: true
+    executionTimeout: 1
+    killTimeout: 0.5

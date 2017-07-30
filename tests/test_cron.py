@@ -1,5 +1,7 @@
 import time
 import datetime
+from pathlib import Path
+
 import yacron.cron
 from yacron.job import RunningJob
 from yacron.config import JobConfig
@@ -244,6 +246,7 @@ def test_concurrency_policy(monkeypatch, policy,
                                    minute=0, second=59, microsecond=750000)
 
     t0 = time.perf_counter()
+
     def get_now():
         return (START_TIME +
                 datetime.timedelta(seconds=(time.perf_counter() - t0)))
@@ -255,7 +258,6 @@ def test_concurrency_policy(monkeypatch, policy,
     )
 
     events = []
-    jobs_stdout = {}
     numjobs = 0
     max_running = 0
 
@@ -264,7 +266,6 @@ def test_concurrency_policy(monkeypatch, policy,
         known_jobs = {}
         pending_jobs = set()
         running_jobs = set()
-        previous_ts = None
         while not (known_jobs and not pending_jobs):
             ts, event, job = await TracingRunningJob._TRACE.get()
             try:
@@ -295,3 +296,9 @@ def test_concurrency_policy(monkeypatch, policy,
     import pprint
     pprint.pprint(events)
     assert (numjobs, max_running) == (expected_numjobs, expected_max_running)
+
+
+def test_simple_config_file(monkeypatch):
+    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+    config_arg = str(Path(__file__).parent / 'testconfig.yaml')
+    yacron.cron.Cron(config_arg)
