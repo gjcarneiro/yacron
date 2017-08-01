@@ -75,7 +75,16 @@ class Reporter:
 
     async def report(self, report_type: ReportType, job: 'RunningJob',
                      config: Dict[str, Any]) -> None:
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
+
+    @staticmethod
+    def _format_body(job):
+        if job.stdout and job.stderr:
+            body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
+                    .format(job.stdout, job.stderr))
+        else:
+            body = job.stdout or job.stderr or '(no output was captured)'
+        return body
 
 
 class SentryReporter(Reporter):
@@ -92,11 +101,8 @@ class SentryReporter(Reporter):
             dsn = os.environ[config['dsn']['fromEnvVar']]
         else:
             return  # sentry disabled: early return
-        if job.stdout and job.stderr:
-            body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
-                    .format(job.stdout, job.stderr))
-        else:
-            body = job.stdout or job.stderr or '(no output was captured)'
+
+        body = self._format_body(job)
 
         if report_type == ReportType.SUCCESS:
             headline = ('Cron job {!r} completed'
@@ -132,11 +138,7 @@ class MailReporter(Reporter):
                 mail['to'] and mail['from']):
             return  # email reporting disabled
 
-        if job.stdout and job.stderr:
-            body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
-                    .format(job.stdout, job.stderr))
-        else:
-            body = job.stdout or job.stderr or '(no output was captured)'
+        body = self._format_body(job)
 
         if mail['smtpHost']:
             smtp_host = mail['smtpHost']
