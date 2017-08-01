@@ -28,27 +28,31 @@ class ReportType(Enum):
 
 class StreamReader:
 
-    def __init__(self, job, stream_name, stream):
+    def __init__(self, job_name: str, stream_name: str,
+                 stream: asyncio.StreamReader,
+                 save_limit: int) -> None:
         self.save_top = []
         self.save_bottom = []
-        self.job = job
+        self.job_name = job_name
+        self.save_limit = save_limit
         self.stream_name = stream_name
         self._reader = create_task(self._read(stream))
         self.discarded_lines = 0
 
     async def _read(self, stream):
-        prefix = "[{} {}] ".format(self.job.config.name, self.stream_name)
-        limit = self.job.config.saveLimit // 2
+        prefix = "[{} {}] ".format(self.job_name, self.stream_name)
+        limit_top = self.save_limit // 2
+        limit_bottom = self.save_limit - limit_top
         while True:
             line = (await stream.readline()).decode("utf-8")
             if not line:
                 return
             sys.stdout.write(prefix + line)
             sys.stdout.flush()
-            if len(self.save_top) < limit:
+            if len(self.save_top) < limit_top:
                 self.save_top.append(line)
             else:
-                if len(self.save_bottom) == limit:
+                if len(self.save_bottom) == limit_bottom:
                     del self.save_bottom[0]
                     self.discarded_lines += 1
                 self.save_bottom.append(line)
@@ -107,10 +111,12 @@ class RunningJob:
 
         if self.config.captureStderr:
             self._stderr_reader = \
-                StreamReader(self, 'stderr', self.proc.stderr)
+                StreamReader(self.config.name, 'stderr', self.proc.stderr,
+                             self.config.saveLimit)
         if self.config.captureStdout:
             self._stdout_reader = \
-                StreamReader(self, 'stdout', self.proc.stdout)
+                StreamReader(self.config.name, 'stdout', self.proc.stdout,
+                             self.config.saveLimit)
 
     async def wait(self) -> None:
         if self.proc is None:
