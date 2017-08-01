@@ -202,3 +202,85 @@ def test_report_sentry(report_type, dsn_from, body, extra, expected_dsn,
     got_body, got_extra = messages_sent[0]
     assert got_body == body
     assert got_extra == extra
+
+
+@pytest.mark.parametrize("shell, command, expected_type, expected_args", [
+    ('', "Civ 6", 'shell', ('Civ 6',)),
+    ('', ["echo", "hello"], 'exec', ('echo', 'hello')),
+    ('bash', 'echo "hello"', 'exec', ('bash', '-c', 'echo "hello"',)),
+])
+def test_job_run(monkeypatch, shell, command, expected_type, expected_args):
+
+    shell_commands = []
+    exec_commands = []
+
+    async def create_subprocess_common(*args, **kwargs):
+        stdout = asyncio.StreamReader()
+        stderr = asyncio.StreamReader()
+        stdout.feed_data(b"out\n")
+        stdout.feed_eof()
+        stderr.feed_data(b"err\n")
+        stderr.feed_eof()
+        proc = Mock(stdout=stdout, stderr=stderr)
+
+        async def wait():
+            return
+
+        proc.wait = wait
+        return proc
+
+    async def create_subprocess_shell(*args, **kwargs):
+        shell_commands.append((args, kwargs))
+        return await create_subprocess_common(*args, **kwargs)
+
+    async def create_subprocess_exec(*args, **kwargs):
+        exec_commands.append((args, kwargs))
+        return await create_subprocess_common(*args, **kwargs)
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec",
+                        create_subprocess_exec)
+    monkeypatch.setattr("asyncio.create_subprocess_shell",
+                        create_subprocess_shell)
+
+    if isinstance(command, list):
+        command_snippet = '\n'.join(
+            ["    command:"] + ['      - ' + arg for arg in command])
+    else:
+        command_snippet = '    command: ' + command
+
+    job_config = yacron.config.parse_config_string('''
+jobs:
+  - name: test
+{command}
+    schedule: "* * * * *"
+    shell: {shell}
+    captureStderr: true
+    captureStdout: true
+    environment:
+      - key: FOO
+        value: bar
+'''.format(command=command_snippet, shell=shell))[0]
+
+    job = yacron.job.RunningJob(job_config)
+
+    async def run(job):
+        await job.start()
+        await job.wait()
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(run(job))
+
+    if shell_commands:
+        run_type = 'shell'
+        assert len(shell_commands) == 1
+        args, kwargs = shell_commands[0]
+    elif exec_commands:
+        run_type = 'exec'
+        assert len(exec_commands) == 1
+        args, kwargs = exec_commands[0]
+    else:
+        raise AssertionError
+
+    assert kwargs['env']['FOO'] == 'bar'
+    assert run_type == expected_type
+    assert args == expected_args
