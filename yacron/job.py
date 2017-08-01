@@ -28,11 +28,13 @@ class ReportType(Enum):
 
 class StreamReader:
 
-    def __init__(self, job_name: str, stream_name: str,
+    def __init__(self,
+                 job_name: str,
+                 stream_name: str,
                  stream: asyncio.StreamReader,
                  save_limit: int) -> None:
-        self.save_top = []
-        self.save_bottom = []
+        self.save_top = []  # type: List[str]
+        self.save_bottom = []  # type: List[str]
         self.job_name = job_name
         self.save_limit = save_limit
         self.stream_name = stream_name
@@ -69,7 +71,106 @@ class StreamReader:
         return output
 
 
+class Reporter:
+
+    async def report(self, report_type: ReportType, job: 'RunningJob',
+                     config: Dict[str, Any]) -> None:
+        raise NotImplementedError
+
+
+class SentryReporter(Reporter):
+
+    async def report(self, report_type: ReportType, job: 'RunningJob',
+                     config: Dict[str, Any]) -> None:
+        config = config['sentry']
+        if config['dsn']['value']:
+            dsn = config['dsn']['value']
+        elif config['dsn']['fromFile']:
+            with open(config['dsn']['fromFile'], "rt") as dsn_file:
+                dsn = dsn_file.read().strip()
+        elif config['dsn']['fromEnvVar']:
+            dsn = os.environ[config['dsn']['fromEnvVar']]
+        else:
+            return  # sentry disabled: early return
+        if job.stdout and job.stderr:
+            body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
+                    .format(job.stdout, job.stderr))
+        else:
+            body = job.stdout or job.stderr or '(no output was captured)'
+
+        if report_type == ReportType.SUCCESS:
+            headline = ('Cron job {!r} completed'
+                        .format(job.config.name))
+        elif report_type == ReportType.FAILURE:
+            headline = ('Cron job {!r} failed'
+                        .format(job.config.name))
+        body = "{}\n\n{}".format(headline, body)
+
+        client = Client(transport=AioHttpTransport,
+                        dsn=dsn,
+                        string_max_length=4096)
+        extra = {
+            'job': job.config.name,
+            'exit_code': job.retcode,
+            'command': job.config.command,
+            'shell': job.config.shell,
+            'success': True if report_type == ReportType.SUCCESS else False,
+        }
+        logger.debug("sentry body: %r", body)
+        client.captureMessage(
+            body,
+            extra=extra,
+        )
+
+
+class MailReporter(Reporter):
+
+    async def report(self, report_type: ReportType, job: 'RunningJob',
+                     config: Dict[str, Any]) -> None:
+        mail = config['mail']
+        if not ((mail['smtpHost'] or mail['smtp_host']) and
+                mail['to'] and mail['from']):
+            return  # email reporting disabled
+
+        if job.stdout and job.stderr:
+            body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
+                    .format(job.stdout, job.stderr))
+        else:
+            body = job.stdout or job.stderr or '(no output was captured)'
+
+        if mail['smtpHost']:
+            smtp_host = mail['smtpHost']
+        else:
+            logger.warning("smtp_host is deprecated, was renamed to smtpHost")
+            smtp_host = mail['smtp_host']
+        if mail['smtpPort']:
+            smtp_port = mail['smtpPort']
+        else:
+            logger.warning("smtp_port is deprecated, was renamed to smtpPort")
+            smtp_port = mail['smtp_port']
+
+        logger.debug("smtp: host=%r, port=%r", smtp_host, smtp_port)
+        smtp = aiosmtplib.SMTP(hostname=smtp_host, port=smtp_port)
+        await smtp.connect()
+        message = MIMEText(body)
+        message['From'] = mail['from']
+        message['To'] = mail['to']
+        if report_type == ReportType.SUCCESS:
+            message['Subject'] = ('Cron job {!r} completed'
+                                  .format(job.config.name))
+        elif report_type == ReportType.FAILURE:
+            message['Subject'] = ('Cron job {!r} failed'
+                                  .format(job.config.name))
+        else:
+            raise AssertionError
+        await smtp.send_message(message)
+
+
 class RunningJob:
+    REPORTERS = [
+        SentryReporter(),
+        MailReporter(),
+    ]  # type: List[Reporter]
 
     def __init__(self, config: JobConfig) -> None:
         self.config = config
@@ -110,10 +211,12 @@ class RunningJob:
         self.proc = await create(*cmd, **kwargs)
 
         if self.config.captureStderr:
+            assert self.proc.stderr is not None
             self._stderr_reader = \
                 StreamReader(self.config.name, 'stderr', self.proc.stderr,
                              self.config.saveLimit)
         if self.config.captureStdout:
+            assert self.proc.stdout is not None
             self._stdout_reader = \
                 StreamReader(self.config.name, 'stdout', self.proc.stdout,
                              self.config.saveLimit)
@@ -185,89 +288,11 @@ class RunningJob:
     async def _report_common(self, report_config: dict,
                              report_type: ReportType) -> None:
         results = await asyncio.gather(
-            self._report_sentry(report_config['sentry'], report_type),
-            self._report_mail(report_config['mail'], report_type),
+            *[reporter.report(report_type, self, report_config)
+              for reporter in self.REPORTERS],
             return_exceptions=True
         )
         for result in results:
             if isinstance(result, Exception):
                 logger.error("Problem reporting job %s failure: %s",
                              self.config.name, result)
-
-    async def _report_sentry(self, config, report_type: ReportType):
-        if config['dsn']['value']:
-            dsn = config['dsn']['value']
-        elif config['dsn']['fromFile']:
-            with open(config['dsn']['fromFile'], "rt") as dsn_file:
-                dsn = dsn_file.read().strip()
-        elif config['dsn']['fromEnvVar']:
-            dsn = os.environ[config['dsn']['fromEnvVar']]
-        else:
-            return  # sentry disabled: early return
-        if self.stdout and self.stderr:
-            body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
-                    .format(self.stdout, self.stderr))
-        else:
-            body = self.stdout or self.stderr or '(no output was captured)'
-
-        if report_type == ReportType.SUCCESS:
-            headline = ('Cron job {!r} completed'
-                        .format(self.config.name))
-        elif report_type == ReportType.FAILURE:
-            headline = ('Cron job {!r} failed'
-                        .format(self.config.name))
-        body = "{}\n\n{}".format(headline, body)
-
-        client = Client(transport=AioHttpTransport,
-                        dsn=dsn,
-                        string_max_length=4096)
-        extra = {
-            'job': self.config.name,
-            'exit_code': self.retcode,
-            'command': self.config.command,
-            'shell': self.config.shell,
-            'success': True if report_type == ReportType.SUCCESS else False,
-        }
-        logger.debug("sentry body: %r", body)
-        client.captureMessage(
-            body,
-            extra=extra,
-        )
-
-    async def _report_mail(self, mail, report_type: ReportType):
-        if not ((mail['smtpHost'] or mail['smtp_host']) and
-                mail['to'] and mail['from']):
-            return  # email reporting disabled
-
-        if self.stdout and self.stderr:
-            body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
-                    .format(self.stdout, self.stderr))
-        else:
-            body = self.stdout or self.stderr or '(no output was captured)'
-
-        if mail['smtpHost']:
-            smtp_host = mail['smtpHost']
-        else:
-            logger.warning("smtp_host is deprecated, was renamed to smtpHost")
-            smtp_host = mail['smtp_host']
-        if mail['smtpPort']:
-            smtp_port = mail['smtpPort']
-        else:
-            logger.warning("smtp_port is deprecated, was renamed to smtpPort")
-            smtp_port = mail['smtp_port']
-
-        logger.debug("smtp: host=%r, port=%r", smtp_host, smtp_port)
-        smtp = aiosmtplib.SMTP(hostname=smtp_host, port=smtp_port)
-        await smtp.connect()
-        message = MIMEText(body)
-        message['From'] = mail['from']
-        message['To'] = mail['to']
-        if report_type == ReportType.SUCCESS:
-            message['Subject'] = ('Cron job {!r} completed'
-                                  .format(self.config.name))
-        elif report_type == ReportType.FAILURE:
-            message['Subject'] = ('Cron job {!r} failed'
-                                  .format(self.config.name))
-        else:
-            raise AssertionError
-        await smtp.send_message(message)
