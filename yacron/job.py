@@ -140,12 +140,12 @@ class MailReporter(Reporter):
 
         if mail['smtpHost']:
             smtp_host = mail['smtpHost']
-        else:
+        else:  # pragma: no cover
             logger.warning("smtp_host is deprecated, was renamed to smtpHost")
             smtp_host = mail['smtp_host']
         if mail['smtpPort']:
             smtp_port = mail['smtpPort']
-        else:
+        else:  # pragma: no cover
             logger.warning("smtp_port is deprecated, was renamed to smtpPort")
             smtp_port = mail['smtp_port']
 
@@ -161,7 +161,7 @@ class MailReporter(Reporter):
         elif report_type == ReportType.FAILURE:
             message['Subject'] = ('Cron job {!r} failed'
                                   .format(job.config.name))
-        else:
+        else:  # pragma: no cover
             raise AssertionError
         await smtp.send_message(message)
 
