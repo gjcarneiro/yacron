@@ -284,3 +284,71 @@ jobs:
     assert kwargs['env']['FOO'] == 'bar'
     assert run_type == expected_type
     assert args == expected_args
+
+
+def test_execution_timeout():
+    job_config = yacron.config.parse_config_string('''
+jobs:
+  - name: test
+    command: |
+        echo "hello"
+        sleep 1
+        echo "world"
+    executionTimeout: 0.25
+    schedule: "* * * * *"
+    captureStderr: false
+    captureStdout: true
+''')[0]
+
+    async def test(job):
+        await job.start()
+        await job.wait()
+        return job.stdout
+
+    job = yacron.job.RunningJob(job_config)
+    loop = asyncio.get_event_loop()
+    stdout = loop.run_until_complete(test(job))
+    assert stdout == "hello\n"
+
+
+def test_error1():
+    job_config = yacron.config.parse_config_string('''
+jobs:
+  - name: test
+    command: echo "hello"
+    schedule: "* * * * *"
+''')[0]
+    job = yacron.job.RunningJob(job_config)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(job.start())
+    with pytest.raises(RuntimeError):
+        loop.run_until_complete(job.start())
+
+
+def test_error2():
+    job_config = yacron.config.parse_config_string('''
+jobs:
+  - name: test
+    command: echo "hello"
+    schedule: "* * * * *"
+''')[0]
+    job = yacron.job.RunningJob(job_config)
+
+    loop = asyncio.get_event_loop()
+    with pytest.raises(RuntimeError):
+        loop.run_until_complete(job.wait())
+
+
+def test_error3():
+    job_config = yacron.config.parse_config_string('''
+jobs:
+  - name: test
+    command: echo "hello"
+    schedule: "* * * * *"
+''')[0]
+    job = yacron.job.RunningJob(job_config)
+
+    loop = asyncio.get_event_loop()
+    with pytest.raises(RuntimeError):
+        loop.run_until_complete(job.cancel())

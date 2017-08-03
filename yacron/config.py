@@ -7,6 +7,7 @@ import strictyaml
 from strictyaml import Optional as Opt
 from strictyaml import Bool, EmptyNone, Enum, Float, Int, Map, Seq, Str
 from strictyaml.exceptions import StrictYAMLError
+from ruamel.yaml.error import YAMLError
 
 from crontab import CronTab
 
@@ -208,6 +209,8 @@ def parse_config_string(data: str, path: Optional[str] = None,
             ex.context_mark.name = path
         if ex.problem_mark is not None:
             ex.problem_mark.name = path
+        raise ConfigError(str(ex))
+    except YAMLError as ex:
         raise ConfigError(str(ex))
 
     defaults = doc.get('defaults', {})

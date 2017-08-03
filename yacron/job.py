@@ -185,6 +185,8 @@ class RunningJob:
         self.execution_deadline = None  # type: Optional[float]
 
     async def start(self) -> None:
+        if self.proc is not None:
+            raise RuntimeError("process already running")
         kwargs = {}  # type: Dict[str, Any]
         if isinstance(self.config.command, list):
             create = asyncio.create_subprocess_exec

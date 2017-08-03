@@ -8,7 +8,7 @@ import sys
 from yacron.cron import Cron, ConfigError
 
 
-def main():
+def main(loop):
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', "--config", default="/etc/yacron.d",
                         metavar="FILE-OR-DIR")
@@ -25,19 +25,22 @@ def main():
         logger.error("Configuration error: %s", str(err))
         sys.exit(1)
 
-    if sys.platform == "win32":
-        loop = asyncio.ProactorEventLoop()
-        asyncio.set_event_loop(loop)
-    else:
-        loop = asyncio.get_event_loop()
-
     loop.add_signal_handler(signal.SIGINT, cron.signal_shutdown)
     loop.add_signal_handler(signal.SIGTERM, cron.signal_shutdown)
     try:
         loop.run_until_complete(cron.run())
     finally:
-        loop.close()
+        loop.remove_signal_handler(signal.SIGINT)
+        loop.remove_signal_handler(signal.SIGTERM)
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == '__main__':  # pragma: no cover
+    if sys.platform == "win32":
+        _loop = asyncio.ProactorEventLoop()
+        asyncio.set_event_loop(_loop)
+    else:
+        _loop = asyncio.get_event_loop()
+    try:
+        main(_loop)
+    finally:
+        _loop.close()
