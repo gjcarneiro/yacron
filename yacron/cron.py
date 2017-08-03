@@ -113,7 +113,6 @@ class Cron:
                                         retry['backoffMultiplier'],
                                         retry['maximumDelay'])
             self.retry_state[job.name] = retry_state
-            print("created retry state:", retry_state)
 
         await self.maybe_launch_job(job)
 
@@ -225,12 +224,10 @@ class Cron:
 
     async def schedule_retry_job(self, job_name: str, delay: float,
                                  retry_num: int) -> None:
-        print("sleeping before retry...")
         logger.info("Cron job %s scheduled to be retried (#%i) "
                     "in %.1f seconds",
                     job_name, retry_num, delay)
         await asyncio.sleep(delay)
-        print("retrying job...")
         try:
             job = self.cron_jobs[job_name]
         except KeyError:
@@ -247,12 +244,9 @@ class Cron:
             state = self.retry_state.pop(name)
         except KeyError:
             return
-        print("cancelling retry state:", state)
         state.cancelled = True
         if state.task is not None:
             if state.task.done():
                 await state.task
             else:
-                print("cancelling:", state)
                 state.task.cancel()
-                print("cancelled:", state)
