@@ -2,6 +2,13 @@
 History
 =======
 
+0.4.1 (2017-08-03)
+------------------
+
+* More polished handling of configuration errors;
+* Unit tests;
+* Bug fixes.
+
 0.4.0 (2017-07-24)
 ------------------
 
