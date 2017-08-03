@@ -261,7 +261,7 @@ jobs:
         value: bar
 '''.format(command=command_snippet, shell=shell))[0]
 
-    job = yacron.job.RunningJob(job_config)
+    job = yacron.job.RunningJob(job_config, None)
 
     async def run(job):
         await job.start()
@@ -305,7 +305,7 @@ jobs:
         await job.wait()
         return job.stdout
 
-    job = yacron.job.RunningJob(job_config)
+    job = yacron.job.RunningJob(job_config, None)
     loop = asyncio.get_event_loop()
     stdout = loop.run_until_complete(test(job))
     assert stdout == "hello\n"
@@ -318,7 +318,7 @@ jobs:
     command: echo "hello"
     schedule: "* * * * *"
 ''')[0]
-    job = yacron.job.RunningJob(job_config)
+    job = yacron.job.RunningJob(job_config, None)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(job.start())
@@ -333,7 +333,7 @@ jobs:
     command: echo "hello"
     schedule: "* * * * *"
 ''')[0]
-    job = yacron.job.RunningJob(job_config)
+    job = yacron.job.RunningJob(job_config, None)
 
     loop = asyncio.get_event_loop()
     with pytest.raises(RuntimeError):
@@ -347,7 +347,7 @@ jobs:
     command: echo "hello"
     schedule: "* * * * *"
 ''')[0]
-    job = yacron.job.RunningJob(job_config)
+    job = yacron.job.RunningJob(job_config, None)
 
     loop = asyncio.get_event_loop()
     with pytest.raises(RuntimeError):

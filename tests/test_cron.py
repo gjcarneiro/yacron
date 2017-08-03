@@ -22,8 +22,8 @@ class TracingRunningJob(RunningJob):
 
     _TRACE = asyncio.Queue()
 
-    def __init__(self, config: JobConfig) -> None:
-        super().__init__(config)
+    def __init__(self, config: JobConfig, retry_state) -> None:
+        super().__init__(config, retry_state)
         self._TRACE.put_nowait((time.perf_counter(), "create", self))
 
     async def start(self) -> None:
@@ -302,3 +302,80 @@ def test_simple_config_file(monkeypatch):
     monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
     config_arg = str(Path(__file__).parent / 'testconfig.yaml')
     yacron.cron.Cron(config_arg)
+
+
+RETRYING_JOB_THAT_FAILS2 = '''
+jobs:
+  - name: test
+    command: |
+      echo "foobar"
+      exit 2
+    schedule: "* * * * *"
+    onFailure:
+      retry:
+        maximumRetries: 1
+        initialDelay: 0.4
+        maximumDelay: 1
+        backoffMultiplier: 1
+'''
+def test_concurrency_and_backoff(monkeypatch):
+    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+    START_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
+                                   minute=0, second=59, microsecond=750000)
+    STOP_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
+                                  minute=1, second=00, microsecond=250000)
+
+    t0 = time.perf_counter()
+
+    def get_now():
+        return (START_TIME +
+                datetime.timedelta(seconds=(time.perf_counter() - t0)))
+
+    def get_reltime(ts):
+        return (START_TIME + datetime.timedelta(seconds=(ts - t0)))
+
+    monkeypatch.setattr("yacron.cron.get_now", get_now)
+
+    cron = yacron.cron.Cron(None, config_yaml=RETRYING_JOB_THAT_FAILS2)
+
+    events = []
+    numjobs = 0
+
+    async def wait_and_quit():
+        nonlocal numjobs
+        known_jobs = {}
+        pending_jobs = set()
+        running_jobs = set()
+        while get_now() < STOP_TIME:
+            try:
+                ts, event, job = await asyncio.wait_for(
+                    TracingRunningJob._TRACE.get(), 0.1)
+            except asyncio.TimeoutError:
+                continue
+            try:
+                jobnum = known_jobs[job]
+            except KeyError:
+                if known_jobs:
+                    jobnum = max(known_jobs.values()) + 1
+                else:
+                    jobnum = 1
+                known_jobs[job] = jobnum
+                pending_jobs.add(jobnum)
+                running_jobs.add(jobnum)
+                numjobs += 1
+            print(get_reltime(ts), event, jobnum)
+            events.append((jobnum, event))
+            if event in {'report_success', 'report_permanent_failure'}:
+                pending_jobs.discard(jobnum)
+            if event in {'report_success', 'report_permanent_failure',
+                         'cancelled'}:
+                running_jobs.discard(jobnum)
+        cron.signal_shutdown()
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(
+        wait_and_quit(),
+        cron.run()))
+    import pprint
+    pprint.pprint(events)
+    assert numjobs == 2

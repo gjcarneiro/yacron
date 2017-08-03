@@ -168,13 +168,33 @@ class MailReporter(Reporter):
         await smtp.send_message(message)
 
 
+class JobRetryState:
+
+    def __init__(self, initial_delay: float,
+                 multiplier: float,
+                 max_delay: float) -> None:
+        self.multiplier = multiplier
+        self.max_delay = max_delay
+        self.delay = initial_delay
+        self.count = 0  # number of times retried
+        self.task = None  # type: Optional[asyncio.Task]
+        self.cancelled = False
+
+    def next_delay(self) -> float:
+        delay = self.delay
+        self.delay = min(delay * self.multiplier, self.max_delay)
+        self.count += 1
+        return delay
+
+
 class RunningJob:
     REPORTERS = [
         SentryReporter(),
         MailReporter(),
     ]  # type: List[Reporter]
 
-    def __init__(self, config: JobConfig) -> None:
+    def __init__(self, config: JobConfig,
+                 retry_state: Optional[JobRetryState]) -> None:
         self.config = config
         self.proc = None  # type: Optional[asyncio.subprocess.Process]
         self.retcode = None  # type: Optional[int]
@@ -183,6 +203,7 @@ class RunningJob:
         self.stderr = None  # type: Optional[str]
         self.stdout = None  # type: Optional[str]
         self.execution_deadline = None  # type: Optional[float]
+        self.retry_state = retry_state
 
     async def start(self) -> None:
         if self.proc is not None:

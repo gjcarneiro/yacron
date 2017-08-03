@@ -7,7 +7,7 @@ from typing import Any, Awaitable, Dict, List, Optional  # noqa
 
 from yacron.config import (JobConfig, parse_config, ConfigError,
                            parse_config_string)
-from yacron.job import RunningJob
+from yacron.job import RunningJob, JobRetryState
 
 
 logger = logging.getLogger('yacron')
@@ -28,14 +28,6 @@ def next_sleep_interval() -> float:
 
 def create_task(coro: Awaitable) -> asyncio.Task:
     return asyncio.get_event_loop().create_task(coro)
-
-
-class JobRetryState:
-
-    def __init__(self, initialDelay: float) -> None:
-        self.delay = initialDelay
-        self.count = 0  # number of times retried
-        self.task = None  # type: Optional[asyncio.Task]
 
 
 class Cron:
@@ -105,11 +97,25 @@ class Cron:
             if job.schedule.test(now):
                 logger.debug("Job %s (%s) is scheduled for now",
                              job.name, job.schedule_unparsed)
-                await self.cancel_job_retries(job.name)
-                await self.maybe_launch_job(job)
+                await self.launch_scheduled_job(job)
             else:
                 logger.debug("Job %s (%s) not scheduled for now",
                              job.name, job.schedule_unparsed)
+
+    async def launch_scheduled_job(self, job: JobConfig) -> None:
+        await self.cancel_job_retries(job.name)
+        assert job.name not in self.retry_state
+
+        retry = job.onFailure['retry']
+        logger.debug("Job %s retry config: %s", job.name, retry)
+        if retry['maximumRetries']:
+            retry_state = JobRetryState(retry['initialDelay'],
+                                        retry['backoffMultiplier'],
+                                        retry['maximumDelay'])
+            self.retry_state[job.name] = retry_state
+            print("created retry state:", retry_state)
+
+        await self.maybe_launch_job(job)
 
     async def maybe_launch_job(self, job: JobConfig) -> None:
         if self.running_jobs[job.name]:
@@ -125,7 +131,7 @@ class Cron:
             else:
                 raise AssertionError  # pragma: no cover
         logger.info("Starting job %s", job.name)
-        running_job = RunningJob(job)
+        running_job = RunningJob(job, self.retry_state.get(job.name))
         await running_job.start()
         self.running_jobs[job.name].append(running_job)
         logger.info("Job %s spawned", job.name)
@@ -193,19 +199,13 @@ class Cron:
             logger.info("Job %s STDERR:\n%s",
                         job.config.name, job.stderr.rstrip())
         await job.report_failure()
-        retry = job.config.onFailure['retry']
-        logger.debug("Job %s retry config: %s",
-                     job.config.name, retry)
-        if not retry['maximumRetries']:
+
+        # Handle retries...
+        state = job.retry_state
+        if state is None or state.cancelled:
             await job.report_permanent_failure()
             return
 
-        # Handle retries...
-        try:
-            state = self.retry_state[job.config.name]
-        except KeyError:
-            state = JobRetryState(retry['initialDelay'])
-            self.retry_state[job.config.name] = state
         logger.debug("Job %s has been retried %i times",
                      job.config.name, state.count)
         if state.task is not None:
@@ -213,24 +213,24 @@ class Cron:
                 await state.task
             else:
                 state.task.cancel()
+        retry = job.config.onFailure['retry']
         if state.count >= retry['maximumRetries']:
             await self.cancel_job_retries(job.config.name)
             await job.report_permanent_failure()
         else:
-            state.count += 1
+            retry_delay = state.next_delay()
             state.task = create_task(
-                self.schedule_retry_job(job.config.name, state.delay,
+                self.schedule_retry_job(job.config.name, retry_delay,
                                         state.count))
-            multiplier = retry['backoffMultiplier']
-            max_delay = retry['maximumDelay']
-            state.delay = min(state.delay * multiplier, max_delay)
 
     async def schedule_retry_job(self, job_name: str, delay: float,
                                  retry_num: int) -> None:
+        print("sleeping before retry...")
         logger.info("Cron job %s scheduled to be retried (#%i) "
                     "in %.1f seconds",
                     job_name, retry_num, delay)
         await asyncio.sleep(delay)
+        print("retrying job...")
         try:
             job = self.cron_jobs[job_name]
         except KeyError:
@@ -247,8 +247,12 @@ class Cron:
             state = self.retry_state.pop(name)
         except KeyError:
             return
+        print("cancelling retry state:", state)
+        state.cancelled = True
         if state.task is not None:
             if state.task.done():
                 await state.task
             else:
+                print("cancelling:", state)
                 state.task.cancel()
+                print("cancelled:", state)
