@@ -8,7 +8,7 @@ import sys
 from yacron.cron import Cron, ConfigError
 
 
-def main(loop):
+def main_loop(loop):
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', "--config", default="/etc/yacron.d",
                         metavar="FILE-OR-DIR")
@@ -34,13 +34,17 @@ def main(loop):
         loop.remove_signal_handler(signal.SIGTERM)
 
 
-if __name__ == '__main__':  # pragma: no cover
+def main():  # pragma: no cover
     if sys.platform == "win32":
         _loop = asyncio.ProactorEventLoop()
         asyncio.set_event_loop(_loop)
     else:
         _loop = asyncio.get_event_loop()
     try:
-        main(_loop)
+        main_loop(_loop)
     finally:
         _loop.close()
+
+
+if __name__ == '__main__':  # pragma: no cover
+    main()

@@ -32,7 +32,7 @@ def test_good_config(monkeypatch):
     monkeypatch.setattr(yacron.__main__, "Cron", FakeCron)
     config_file = str(Path(__file__).parent / "testconfig.yaml")
     monkeypatch.setattr(sys, "argv", ["yacron", "-c", config_file])
-    yacron.__main__.main(loop)
+    yacron.__main__.main_loop(loop)
 
 
 def test_broken_config(monkeypatch):
@@ -42,7 +42,7 @@ def test_broken_config(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["yacron", "-c", config_file])
     monkeypatch.setattr(sys, "exit", exit)
     with pytest.raises(ExitError):
-        yacron.__main__.main(loop)
+        yacron.__main__.main_loop(loop)
 
 
 def test_missing_config(monkeypatch):
@@ -52,4 +52,4 @@ def test_missing_config(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["yacron", "-c", config_file])
     monkeypatch.setattr(sys, "exit", exit)
     with pytest.raises(ExitError):
-        yacron.__main__.main(loop)
+        yacron.__main__.main_loop(loop)
