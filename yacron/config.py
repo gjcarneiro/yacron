@@ -70,7 +70,7 @@ DEFAULT_CONFIG = {
 
 
 _report_schema = Map({
-    "sentry": Map({
+    Opt("sentry"): Map({
         Opt("dsn"): Map({
             Opt("value"): Str() | EmptyNone(),
             Opt("fromFile"): Str() | EmptyNone(),
