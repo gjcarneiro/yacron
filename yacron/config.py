@@ -70,11 +70,11 @@ DEFAULT_CONFIG = {
 
 
 _report_schema = Map({
-    "sentry": Map({
+    Opt("sentry"): Map({
         Opt("dsn"): Map({
-            Opt("value"): Str() | EmptyNone(),
-            Opt("fromFile"): Str() | EmptyNone(),
-            Opt("fromEnvVar"): Str() | EmptyNone(),
+            Opt("value"): EmptyNone() | Str(),
+            Opt("fromFile"): EmptyNone() | Str(),
+            Opt("fromEnvVar"): EmptyNone() | Str(),
         }),
     }),
     Opt("mail"): Map({
@@ -204,7 +204,7 @@ def parse_config_string(data: str, path: Optional[str] = None,
                         ) -> List[JobConfig]:
     try:
         doc = strictyaml.load(data, CONFIG_SCHEMA, label=path).data
-    except StrictYAMLError as ex:
+    except YAMLError as ex:
         raise ConfigError(str(ex))
 
     defaults = doc.get('defaults', {})
