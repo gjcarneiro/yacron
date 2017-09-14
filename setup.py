@@ -10,7 +10,7 @@ with open('README.rst') as readme_file:
 
 
 requirements = [
-    "strictyaml>=0.7",
+    "strictyaml>=0.7.2",
     "crontab",
     "aiohttp",
     "raven",
