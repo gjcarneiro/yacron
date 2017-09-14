@@ -70,11 +70,11 @@ DEFAULT_CONFIG = {
 
 
 _report_schema = Map({
-    "sentry": Map({
+    Opt("sentry"): Map({
         Opt("dsn"): Map({
-            Opt("value"): Str() | EmptyNone(),
-            Opt("fromFile"): Str() | EmptyNone(),
-            Opt("fromEnvVar"): Str() | EmptyNone(),
+            Opt("value"): EmptyNone() | Str(),
+            Opt("fromFile"): EmptyNone() | Str(),
+            Opt("fromEnvVar"): EmptyNone() | Str(),
         }),
     }),
     Opt("mail"): Map({
@@ -95,8 +95,8 @@ _job_defaults_common = {
     Opt("saveLimit"): Int(),
     Opt("failsWhen"): Map({
         "producesStdout": Bool(),
-        "producesStderr": Bool(),
-        "nonzeroReturn": Bool(),
+        Opt("producesStderr"): Bool(),
+        Opt("nonzeroReturn"): Bool(),
     }),
     Opt("onFailure"): Map({
         Opt("retry"): Map({
@@ -203,13 +203,7 @@ def parse_config_file(path: str) -> List[JobConfig]:
 def parse_config_string(data: str, path: Optional[str] = None,
                         ) -> List[JobConfig]:
     try:
-        doc = strictyaml.load(data, CONFIG_SCHEMA).data
-    except StrictYAMLError as ex:
-        if ex.context_mark is not None:
-            ex.context_mark.name = path
-        if ex.problem_mark is not None:
-            ex.problem_mark.name = path
-        raise ConfigError(str(ex))
+        doc = strictyaml.load(data, CONFIG_SCHEMA, label=path).data
     except YAMLError as ex:
         raise ConfigError(str(ex))
 
