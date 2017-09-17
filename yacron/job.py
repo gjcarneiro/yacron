@@ -297,5 +297,5 @@ class RunningJob:
             'exit_code': self.retcode,
             'command': self.config.command,
             'shell': self.config.shell,
-            'environment': self.environment,
+            'environment': self.env,
         }
