@@ -82,10 +82,15 @@ jobs:
         {'report': {'mail': {'from': 'example@foo.com',
                              'smtpHost': '127.0.0.1',
                              'smtpPort': 10025,
-                             'to': 'example@bar.com'},
-                    'sentry': {'dsn': {'fromEnvVar': None,
-                                       'fromFile': None,
-                                       'value': None}}},
+                             'to': 'example@bar.com',
+                             'body': (config.DEFAULT_CONFIG['onFailure']
+                                      ['report']['mail']['body']),
+                             'subject': (config.DEFAULT_CONFIG['onFailure']
+                                         ['report']['mail']['subject']),
+                             },
+                    'sentry': (config.DEFAULT_CONFIG['onFailure']
+                               ['report']['sentry']),
+                    },
          'retry': {'backoffMultiplier': 2,
                    'initialDelay': 1,
                    'maximumDelay': 300,
@@ -123,10 +128,15 @@ jobs:
         {'report': {'mail': {'from': None,
                              'smtpHost': '127.0.0.1',
                              'smtpPort': 10025,
-                             'to': None},
-                    'sentry': {'dsn': {'fromEnvVar': None,
-                                       'fromFile': None,
-                                       'value': None}}},
+                             'to': None,
+                             'body': (config.DEFAULT_CONFIG['onFailure']
+                                      ['report']['mail']['body']),
+                             'subject': (config.DEFAULT_CONFIG['onFailure']
+                                         ['report']['mail']['subject']),
+                             },
+                    'sentry': (config.DEFAULT_CONFIG['onFailure']
+                               ['report']['sentry']),
+                    },
          'retry': {'backoffMultiplier': 2,
                    'initialDelay': 1,
                    'maximumDelay': 300,

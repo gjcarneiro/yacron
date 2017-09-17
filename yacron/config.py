@@ -18,6 +18,26 @@ class ConfigError(Exception):
     pass
 
 
+DEFAULT_BODY_TEMPLATE = """
+{% if stdout and stderr -%}
+STDOUT:
+---
+{{stdout}}
+---
+STDERR:
+{{stderr}}
+{% elif stdout -%}
+{{stdout}}
+{% elif stderr -%}
+{{stderr}}
+{% else -%}
+(no output was captured)
+{% endif %}
+"""
+
+DEFAULT_SUBJECT_TEMPLATE = ("Cron job '{{name}}' {% if success %}completed"
+                            "{% else %}failed{% endif %}")
+
 _REPORT_DEFAULTS = {
     'sentry': {
         'dsn': {
@@ -25,12 +45,15 @@ _REPORT_DEFAULTS = {
             'fromFile': None,
             'fromEnvVar': None,
         },
+        'body': DEFAULT_SUBJECT_TEMPLATE + '\n' + DEFAULT_BODY_TEMPLATE,
     },
     'mail': {
         'from': None,
         'to': None,
         'smtpHost': None,
         'smtpPort': 25,
+        'subject': DEFAULT_SUBJECT_TEMPLATE,
+        'body': DEFAULT_BODY_TEMPLATE,
     },
 }
 
@@ -80,6 +103,8 @@ _report_schema = Map({
         "to": EmptyNone() | Str(),
         Opt("smtpHost"): Str(),
         Opt("smtpPort"): Int(),
+        Opt("subject"): Str(),
+        Opt("body"): Str(),
     })
 })
 

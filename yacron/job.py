@@ -11,6 +11,8 @@ from raven import Client
 from raven_aiohttp import AioHttpTransport
 
 import aiosmtplib
+import jinja2
+
 from yacron.config import JobConfig
 
 logger = logging.getLogger('yacron')
@@ -96,16 +98,8 @@ class SentryReporter(Reporter):
         else:
             return  # sentry disabled: early return
 
-        body = self._format_body(job)
-
-        if success:
-            headline = ('Cron job {!r} completed'
-                        .format(job.config.name))
-        else:
-            headline = ('Cron job {!r} failed'
-                        .format(job.config.name))
-        body = "{}\n\n{}".format(headline, body)
-
+        template = jinja2.Template(config['body'])
+        body = template.render(job.template_vars)
         client = Client(transport=AioHttpTransport,
                         dsn=dsn,
                         string_max_length=4096)
@@ -130,23 +124,21 @@ class MailReporter(Reporter):
         mail = config['mail']
         if not (mail['to'] and mail['from']):
             return  # email reporting disabled
-
-        body = self._format_body(job)
         smtp_host = mail['smtpHost']
         smtp_port = mail['smtpPort']
+        tmpl_vars = job.template_vars
+        body_tmpl = jinja2.Template(mail['body'])
+        body = body_tmpl.render(tmpl_vars)
+        subject_tmpl = jinja2.Template(mail['subject'])
+        subject = subject_tmpl.render(tmpl_vars)
 
         logger.debug("smtp: host=%r, port=%r", smtp_host, smtp_port)
-        smtp = aiosmtplib.SMTP(hostname=smtp_host, port=smtp_port)
-        await smtp.connect()
         message = MIMEText(body)
         message['From'] = mail['from']
         message['To'] = mail['to']
-        if success:
-            message['Subject'] = ('Cron job {!r} completed'
-                                  .format(job.config.name))
-        else:
-            message['Subject'] = ('Cron job {!r} failed'
-                                  .format(job.config.name))
+        message['Subject'] = subject
+        smtp = aiosmtplib.SMTP(hostname=smtp_host, port=smtp_port)
+        await smtp.connect()
         await smtp.send_message(message)
 
 
@@ -301,3 +293,12 @@ class RunningJob:
             if isinstance(result, Exception):
                 logger.error("Problem reporting job %s failure: %s",
                              self.config.name, result)
+
+    @property
+    def template_vars(self) -> dict:
+        return {
+            'name': self.config.name,
+            'success': not self.failed,
+            'stdout': self.stdout,
+            'stderr': self.stderr,
+        }

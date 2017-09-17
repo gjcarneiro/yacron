@@ -16,6 +16,7 @@ requirements = [
     "raven",
     "raven-aiohttp",
     "aiosmtplib",
+    "jinja2",
 ]
 
 

@@ -41,33 +41,57 @@ jobs:
           to: example@bar.com
           smtpHost: smtp1
           smtpPort: 1025
+          subject: "Cron job '{{name}}' {% if success %}completed{% else %}failed{% endif %}"
+          body: |
+            {% if stdout and stderr -%}
+            STDOUT:
+            ---
+            {{stdout}}
+            ---
+            STDERR:
+            {{stderr}}
+            {% elif stdout -%}
+            {{stdout}}
+            {% elif stderr -%}
+            {{stderr}}
+            {% else -%}
+            (no output was captured)
+            {% endif %}
 '''
 
 
 @pytest.mark.parametrize("success, stdout, stderr, subject, body", [
     (True, "out", "err",
      "Cron job 'test' completed",
-     'STDOUT:\n---\nout\n---\nSTDERR:\nerr'),
+     'STDOUT:\n---\nout\n---\nSTDERR:\nerr\n'),
 
     (False, "out", "err",
      "Cron job 'test' failed",
-     'STDOUT:\n---\nout\n---\nSTDERR:\nerr'),
+     'STDOUT:\n---\nout\n---\nSTDERR:\nerr\n'),
 
     (False, None, None,
      "Cron job 'test' failed",
-     "(no output was captured)"),
+     "(no output was captured)\n"),
 
     (False, None, "err",
      "Cron job 'test' failed",
-     'err'),
+     'err\n'),
 
     (False, "out", None,
      "Cron job 'test' failed",
-     'out'),
+     'out\n'),
 ])
 def test_report_mail(success, stdout, stderr, subject, body):
     job_config = yacron.config.parse_config_string(A_JOB)[0]
-    job = Mock(config=job_config, stdout=stdout, stderr=stderr)
+    print(job_config.onSuccess['report'])
+    job = Mock(config=job_config, stdout=stdout, stderr=stderr,
+               template_vars={
+                   'name': job_config.name,
+                   'success': success,
+                   'stdout': stdout,
+                   'stderr': stderr,
+               })
+
     mail = yacron.job.MailReporter()
     loop = asyncio.get_event_loop()
 
@@ -108,7 +132,7 @@ def test_report_mail(success, stdout, stderr, subject, body):
 @pytest.mark.parametrize("success, dsn_from, body, extra, expected_dsn", [
     (True,
      "value",
-     "Cron job 'test' completed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr",
+     "Cron job 'test' completed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
      {
         'job': 'test',
         'exit_code': 0,
@@ -118,7 +142,7 @@ def test_report_mail(success, stdout, stderr, subject, body):
     }, "http://xxx:yyy@sentry/1"),
     (False,
      "file",
-     "Cron job 'test' failed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr",
+     "Cron job 'test' failed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
      {
         'job': 'test',
         'exit_code': 0,
@@ -128,7 +152,7 @@ def test_report_mail(success, stdout, stderr, subject, body):
     }, "http://xxx:yyy@sentry/2"),
     (False,
      "envvar",
-     "Cron job 'test' failed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr",
+     "Cron job 'test' failed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
      {
         'job': 'test',
         'exit_code': 0,
@@ -152,7 +176,9 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
                 "value": "http://xxx:yyy@sentry/1",
                 "fromFile": None,
                 "fromEnvVar": None,
-            }
+            },
+            'body': (yacron.config.DEFAULT_CONFIG['onFailure']['report']
+                     ['sentry']['body']),
         }
     elif dsn_from == 'file':
         job_config.onSuccess['report']['sentry'] = {
@@ -160,7 +186,9 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
                 "value": None,
                 "fromFile": str(p),
                 "fromEnvVar": None,
-            }
+            },
+            'body': (yacron.config.DEFAULT_CONFIG['onFailure']['report']
+                     ['sentry']['body']),
         }
     elif dsn_from == 'envvar':
         job_config.onSuccess['report']['sentry'] = {
@@ -168,12 +196,20 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
                 "value": None,
                 "fromFile": None,
                 "fromEnvVar": "TEST_SENTRY_DSN",
-            }
+            },
+            'body': (yacron.config.DEFAULT_CONFIG['onFailure']['report']
+                     ['sentry']['body']),
         }
     else:
         raise AssertionError
 
-    job = Mock(config=job_config, stdout="out", stderr="err", retcode=0)
+    job = Mock(config=job_config, stdout="out", stderr="err", retcode=0,
+               template_vars={
+                   'name': job_config.name,
+                   'success': success,
+                   'stdout': "out",
+                   'stderr': "err",
+               })
     loop = asyncio.get_event_loop()
 
     messages_sent = []
@@ -191,7 +227,7 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
 
     sentry = yacron.job.SentryReporter()
     with patch("raven.Client.__init__", init), \
-         patch("raven.Client.captureMessage", captureMessage):
+            patch("raven.Client.captureMessage", captureMessage):
         loop.run_until_complete(sentry.report(success,
                                               job,
                                               job_config.onSuccess['report']))
