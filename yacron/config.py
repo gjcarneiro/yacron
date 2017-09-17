@@ -29,8 +29,6 @@ _REPORT_DEFAULTS = {
     'mail': {
         'from': None,
         'to': None,
-        'smtp_host': None,  # deprecated
-        'smtp_port': 25,  # deprecated
         'smtpHost': None,
         'smtpPort': 25,
     },
@@ -80,8 +78,6 @@ _report_schema = Map({
     Opt("mail"): Map({
         "from": EmptyNone() | Str(),
         "to": EmptyNone() | Str(),
-        Opt("smtp_host"): Str(),
-        Opt("smtp_port"): Int(),
         Opt("smtpHost"): Str(),
         Opt("smtpPort"): Int(),
     })
