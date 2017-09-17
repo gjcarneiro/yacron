@@ -198,6 +198,48 @@ It is possible also to report job success, as well as failure, via the
           to: example@bar.com
           smtp_host: 127.0.0.1
 
+Since yacron 0.5, it is possible to customise the format of the report. For
+``mail`` reporting, the option ``subject`` indicates what is the subject of the
+email, while ``body`` formats the email body.  For Sentry reporting, there is
+only ``body``.  In all cases, the values of those options are strings that are
+processed by the jinja2_ templating engine.  The following variables are
+available in templating:
+
+* name(str): name of the cron job
+* success(bool): whether or not the cron job succeeded
+* stdout(str): standard output of the process
+* stderr(str): standard error of the process
+* exit_code(int): process exit code
+* command(str): cron job command
+* shell(str): cron job shell
+* environment(dict): subprocess environment variables
+
+.. _jinja2: http://jinja.pocoo.org/
+
+Example:
+
+.. code-block:: yaml
+
+  - name: test-01
+    command: |
+      echo "hello" 1>&2
+      sleep 1
+      exit 10
+    schedule:
+      minute: "*/2"
+    captureStderr: true
+    onFailure:
+      report:
+        mail:
+          from: example@foo.com
+          to: example@bar.com
+          smtp_host: 127.0.0.1
+          subject: Cron job '{{name}}' {% if success %}completed{% else %}failed{% endif %}
+          body: |
+            {{stderr}}
+            (exit code: {{exit_code}})
+
+
 Handling failure
 ++++++++++++++++
 
