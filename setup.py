@@ -55,6 +55,8 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Environment :: Console',
+        'Topic :: Utilities',
     ],
     setup_requires=setup_requirements,
     tests_require=test_requirements,
