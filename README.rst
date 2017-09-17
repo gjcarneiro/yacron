@@ -31,7 +31,9 @@ Features
 
 Status
 --------------
-The project is still in alpha stage: not all features are complete, and you might still find bugs.
+
+The project is in beta stage: essential features are complete, and the focus is
+finding and fixing bugs before the first stable release.
 
 Installation
 ------------
