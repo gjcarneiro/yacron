@@ -6,7 +6,6 @@ from typing import List, Optional
 import strictyaml
 from strictyaml import Optional as Opt
 from strictyaml import Bool, EmptyNone, Enum, Float, Int, Map, Seq, Str
-from strictyaml.exceptions import StrictYAMLError
 from ruamel.yaml.error import YAMLError
 
 from crontab import CronTab
