@@ -5,6 +5,7 @@ History
 0.5.0
 ------------------
 * Templating support for reports
+* Remove deprecated smtp_host/smtp_port
 
 0.4.3 (2017-09-13)
 ------------------
