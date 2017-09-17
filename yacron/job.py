@@ -169,6 +169,7 @@ class RunningJob:
         self.stdout = None  # type: Optional[str]
         self.execution_deadline = None  # type: Optional[float]
         self.retry_state = retry_state
+        self.env = None  # type: Optional[Dict[str, str]]
 
     async def start(self) -> None:
         if self.proc is not None:
@@ -188,6 +189,7 @@ class RunningJob:
             env = dict(os.environ)
             for envvar in self.config.environment:
                 env[envvar['key']] = envvar['value']
+                self.env = env
             kwargs['env'] = env
         logger.debug("%s: will execute argv %r", self.config.name, cmd)
         if self.config.captureStderr:
@@ -292,4 +294,8 @@ class RunningJob:
             'success': not self.failed,
             'stdout': self.stdout,
             'stderr': self.stderr,
+            'exit_code': self.retcode,
+            'command': self.config.command,
+            'shell': self.config.shell,
+            'environment': self.environment,
         }
