@@ -73,15 +73,6 @@ class Reporter:
                      config: Dict[str, Any]) -> None:
         raise NotImplementedError  # pragma: no cover
 
-    @staticmethod
-    def _format_body(job):
-        if job.stdout and job.stderr:
-            body = ("STDOUT:\n---\n{}\n---\nSTDERR:\n{}"
-                    .format(job.stdout, job.stderr))
-        else:
-            body = job.stdout or job.stderr or '(no output was captured)'
-        return body
-
 
 class SentryReporter(Reporter):
 
