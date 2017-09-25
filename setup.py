@@ -10,12 +10,13 @@ with open('README.rst') as readme_file:
 
 
 requirements = [
-    "strictyaml>=0.7",
+    "strictyaml>=0.7.2",
     "crontab",
     "aiohttp",
     "raven",
     "raven-aiohttp",
     "aiosmtplib",
+    "jinja2",
 ]
 
 
@@ -48,13 +49,15 @@ setup(
     zip_safe=True,
     keywords='yacron',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Environment :: Console',
+        'Topic :: Utilities',
     ],
     setup_requires=setup_requirements,
     tests_require=test_requirements,

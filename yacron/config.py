@@ -6,7 +6,6 @@ from typing import List, Optional
 import strictyaml
 from strictyaml import Optional as Opt
 from strictyaml import Bool, EmptyNone, Enum, Float, Int, Map, Seq, Str
-from strictyaml.exceptions import StrictYAMLError
 from ruamel.yaml.error import YAMLError
 
 from crontab import CronTab
@@ -18,6 +17,26 @@ class ConfigError(Exception):
     pass
 
 
+DEFAULT_BODY_TEMPLATE = """
+{% if stdout and stderr -%}
+STDOUT:
+---
+{{stdout}}
+---
+STDERR:
+{{stderr}}
+{% elif stdout -%}
+{{stdout}}
+{% elif stderr -%}
+{{stderr}}
+{% else -%}
+(no output was captured)
+{% endif %}
+"""
+
+DEFAULT_SUBJECT_TEMPLATE = ("Cron job '{{name}}' {% if success %}completed"
+                            "{% else %}failed{% endif %}")
+
 _REPORT_DEFAULTS = {
     'sentry': {
         'dsn': {
@@ -25,14 +44,15 @@ _REPORT_DEFAULTS = {
             'fromFile': None,
             'fromEnvVar': None,
         },
+        'body': DEFAULT_SUBJECT_TEMPLATE + '\n' + DEFAULT_BODY_TEMPLATE,
     },
     'mail': {
         'from': None,
         'to': None,
-        'smtp_host': None,  # deprecated
-        'smtp_port': 25,  # deprecated
         'smtpHost': None,
         'smtpPort': 25,
+        'subject': DEFAULT_SUBJECT_TEMPLATE,
+        'body': DEFAULT_BODY_TEMPLATE,
     },
 }
 
@@ -72,18 +92,18 @@ DEFAULT_CONFIG = {
 _report_schema = Map({
     Opt("sentry"): Map({
         Opt("dsn"): Map({
-            Opt("value"): Str() | EmptyNone(),
-            Opt("fromFile"): Str() | EmptyNone(),
-            Opt("fromEnvVar"): Str() | EmptyNone(),
+            Opt("value"): EmptyNone() | Str(),
+            Opt("fromFile"): EmptyNone() | Str(),
+            Opt("fromEnvVar"): EmptyNone() | Str(),
         }),
     }),
     Opt("mail"): Map({
         "from": EmptyNone() | Str(),
         "to": EmptyNone() | Str(),
-        Opt("smtp_host"): Str(),
-        Opt("smtp_port"): Int(),
         Opt("smtpHost"): Str(),
         Opt("smtpPort"): Int(),
+        Opt("subject"): Str(),
+        Opt("body"): Str(),
     })
 })
 
@@ -95,8 +115,8 @@ _job_defaults_common = {
     Opt("saveLimit"): Int(),
     Opt("failsWhen"): Map({
         "producesStdout": Bool(),
-        "producesStderr": Bool(),
-        "nonzeroReturn": Bool(),
+        Opt("producesStderr"): Bool(),
+        Opt("nonzeroReturn"): Bool(),
     }),
     Opt("onFailure"): Map({
         Opt("retry"): Map({
@@ -203,13 +223,7 @@ def parse_config_file(path: str) -> List[JobConfig]:
 def parse_config_string(data: str, path: Optional[str] = None,
                         ) -> List[JobConfig]:
     try:
-        doc = strictyaml.load(data, CONFIG_SCHEMA).data
-    except StrictYAMLError as ex:
-        if ex.context_mark is not None:
-            ex.context_mark.name = path
-        if ex.problem_mark is not None:
-            ex.problem_mark.name = path
-        raise ConfigError(str(ex))
+        doc = strictyaml.load(data, CONFIG_SCHEMA, label=path).data
     except YAMLError as ex:
         raise ConfigError(str(ex))
 
