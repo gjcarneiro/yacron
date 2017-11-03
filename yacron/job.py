@@ -5,6 +5,7 @@ import os
 import sys
 import time
 from email.mime.text import MIMEText
+from socket import gethostname
 from typing import Any, Awaitable, Dict, List, Optional  # noqa
 
 from raven import Client
@@ -16,6 +17,10 @@ import jinja2
 from yacron.config import JobConfig
 
 logger = logging.getLogger('yacron')
+
+
+if 'HOSTNAME' not in os.environ:
+    os.environ['HOSTNAME'] = gethostname()
 
 
 def create_task(coro: Awaitable) -> asyncio.Task:
@@ -91,9 +96,11 @@ class SentryReporter(Reporter):
 
         template = jinja2.Template(config['body'])
         body = template.render(job.template_vars)
-        client = Client(transport=AioHttpTransport,
-                        dsn=dsn,
-                        string_max_length=4096)
+
+        fingerprint = []
+        for line in config['fingerprint']:
+            fingerprint.append(jinja2.Template(line).render(job.template_vars))
+
         extra = {
             'job': job.config.name,
             'exit_code': job.retcode,
@@ -101,10 +108,14 @@ class SentryReporter(Reporter):
             'shell': job.config.shell,
             'success': success,
         }
-        logger.debug("sentry body: %r", body)
+        logger.debug("sentry body: %r; fingerprint: %r", body, fingerprint)
+        client = Client(transport=AioHttpTransport,
+                        dsn=dsn,
+                        string_max_length=4096)
         client.captureMessage(
             body,
             extra=extra,
+            fingerprint=fingerprint,
         )
 
 

@@ -129,7 +129,8 @@ def test_report_mail(success, stdout, stderr, subject, body):
     assert message.get_payload() == body
 
 
-@pytest.mark.parametrize("success, dsn_from, body, extra, expected_dsn", [
+@pytest.mark.parametrize(
+    "success, dsn_from, body, extra, expected_dsn, fingerprint", [
     (True,
      "value",
      "Cron job 'test' completed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
@@ -139,7 +140,7 @@ def test_report_mail(success, stdout, stderr, subject, body):
         'command': 'ls',
         'shell': '/bin/sh',
         'success': True,
-    }, "http://xxx:yyy@sentry/1"),
+    }, "http://xxx:yyy@sentry/1", ["test"]),
     (False,
      "file",
      "Cron job 'test' failed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
@@ -149,7 +150,7 @@ def test_report_mail(success, stdout, stderr, subject, body):
         'command': 'ls',
         'shell': '/bin/sh',
         'success': False,
-    }, "http://xxx:yyy@sentry/2"),
+    }, "http://xxx:yyy@sentry/2", ["test"]),
     (False,
      "envvar",
      "Cron job 'test' failed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
@@ -159,10 +160,10 @@ def test_report_mail(success, stdout, stderr, subject, body):
         'command': 'ls',
         'shell': '/bin/sh',
         'success': False,
-    }, "http://xxx:yyy@sentry/3"),
+    }, "http://xxx:yyy@sentry/3", ["test"]),
 ])
 def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
-                       tmpdir, monkeypatch):
+                       fingerprint, tmpdir, monkeypatch):
     job_config = yacron.config.parse_config_string(A_JOB)[0]
 
     p = tmpdir.join("sentry-secret-dsn")
@@ -179,6 +180,7 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
             },
             'body': (yacron.config.DEFAULT_CONFIG['onFailure']['report']
                      ['sentry']['body']),
+            'fingerprint': ['{{ name }}'],
         }
     elif dsn_from == 'file':
         job_config.onSuccess['report']['sentry'] = {
@@ -189,6 +191,7 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
             },
             'body': (yacron.config.DEFAULT_CONFIG['onFailure']['report']
                      ['sentry']['body']),
+            'fingerprint': ['{{ name }}'],
         }
     elif dsn_from == 'envvar':
         job_config.onSuccess['report']['sentry'] = {
@@ -199,6 +202,7 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
             },
             'body': (yacron.config.DEFAULT_CONFIG['onFailure']['report']
                      ['sentry']['body']),
+            'fingerprint': ['{{ name }}'],
         }
     else:
         raise AssertionError
@@ -214,8 +218,8 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
 
     messages_sent = []
 
-    def captureMessage(self, body, extra):
-        messages_sent.append((body, extra))
+    def captureMessage(self, body, extra, *, fingerprint):
+        messages_sent.append((body, extra, fingerprint))
 
     real_init = raven.Client.__init__
     init_args = (), {}
@@ -236,9 +240,10 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
     assert kwargs.get('dsn') == expected_dsn
 
     assert len(messages_sent) == 1
-    got_body, got_extra = messages_sent[0]
+    got_body, got_extra, got_fingerprint = messages_sent[0]
     assert got_body == body
     assert got_extra == extra
+    assert got_fingerprint == fingerprint
 
 
 @pytest.mark.parametrize("shell, command, expected_type, expected_args", [

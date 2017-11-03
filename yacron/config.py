@@ -45,6 +45,11 @@ _REPORT_DEFAULTS = {
             'fromEnvVar': None,
         },
         'body': DEFAULT_SUBJECT_TEMPLATE + '\n' + DEFAULT_BODY_TEMPLATE,
+        'fingerprint': [
+            'yacron',
+            '{{ environment.HOSTNAME }}',
+            '{{ name }}',
+        ]
     },
     'mail': {
         'from': None,
@@ -96,6 +101,7 @@ _report_schema = Map({
             Opt("fromFile"): EmptyNone() | Str(),
             Opt("fromEnvVar"): EmptyNone() | Str(),
         }),
+        Opt("fingerprint"): Seq(Str()),
     }),
     Opt("mail"): Map({
         "from": EmptyNone() | Str(),
