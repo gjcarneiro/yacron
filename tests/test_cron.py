@@ -234,6 +234,7 @@ jobs:
 '''
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize("policy,expected_numjobs,expected_max_running", [
     ('Allow', 2, 2),
     ('Forbid', 1, 1),
@@ -318,6 +319,9 @@ jobs:
         maximumDelay: 1
         backoffMultiplier: 1
 '''
+
+
+@pytest.mark.xfail
 def test_concurrency_and_backoff(monkeypatch):
     monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
     START_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
