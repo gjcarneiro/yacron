@@ -243,7 +243,7 @@ def test_concurrency_policy(monkeypatch, policy,
                             expected_numjobs, expected_max_running):
     monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
     START_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
-                                   minute=0, second=59, microsecond=500000)
+                                   minute=0, second=59, microsecond=750000)
 
     t0 = time.perf_counter()
 
@@ -314,16 +314,16 @@ jobs:
     onFailure:
       retry:
         maximumRetries: 1
-        initialDelay: 0.75
+        initialDelay: 0.4
         maximumDelay: 1
         backoffMultiplier: 1
 '''
 def test_concurrency_and_backoff(monkeypatch):
     monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
     START_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
-                                   minute=0, second=59, microsecond=500000)
+                                   minute=0, second=59, microsecond=750000)
     STOP_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
-                                  minute=1, second=00, microsecond=500000)
+                                  minute=1, second=00, microsecond=250000)
 
     t0 = time.perf_counter()
 
