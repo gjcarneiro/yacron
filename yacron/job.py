@@ -6,7 +6,7 @@ import sys
 import time
 from email.mime.text import MIMEText
 from socket import gethostname
-from typing import Any, Awaitable, Dict, List, Optional  # noqa
+from typing import Any, Awaitable, Dict, List, Optional, Union  # noqa
 
 from raven import Client
 from raven_aiohttp import AioHttpTransport
@@ -15,6 +15,7 @@ import aiosmtplib
 import jinja2
 
 from yacron.config import JobConfig
+from yacron.statsd import send_to_statsd
 
 logger = logging.getLogger('yacron')
 
@@ -169,6 +170,16 @@ class RunningJob:
         MailReporter(),
     ]  # type: List[Reporter]
 
+    def __new__(
+        cls,
+        config: JobConfig,
+        retry_state: Optional[JobRetryState]
+    ) -> Union['RunningJob', 'RunningJobWithStatsd']:
+        if config.statsd is None:
+            return super().__new__(cls)
+        else:
+            return super().__new__(RunningJobWithStatsd)
+
     def __init__(self, config: JobConfig,
                  retry_state: Optional[JobRetryState]) -> None:
         self.config = config
@@ -310,3 +321,47 @@ class RunningJob:
             'shell': self.config.shell,
             'environment': self.env,
         }
+
+
+class RunningJobWithStatsd(RunningJob):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        statsd_config = self.config.statsd
+        self.prefix = statsd_config['prefix']
+        self.statsd_host = statsd_config['host']
+        self.statsd_port = statsd_config['port']
+        self.start_time = None
+
+    async def start(self):
+        await super().start()
+        await send_to_statsd(
+            self.statsd_host,
+            self.statsd_port,
+            '{prefix}.start:1|g\n'.format(prefix=self.prefix)
+        )
+        self.start_time = time.perf_counter()
+
+    def _report_to_statsd(method):
+        async def wrapper(self, *args, **kwargs):
+            duration_seconds = time.perf_counter() - self.start_time
+            duration = int(round(duration_seconds * 1000))
+            await send_to_statsd(
+                self.statsd_host,
+                self.statsd_port,
+                (
+                    '{prefix}.stop:1|g\n'
+                    '{prefix}.success:{success}|g\n'
+                    '{prefix}.duration:{duration}|ms|@0.1\n'
+                ).format(
+                    prefix=self.prefix,
+                    success=int(not self.failed),
+                    duration=duration,
+                ),
+            )
+            await method(self, *args, **kwargs)
+        return wrapper
+
+    report_success = _report_to_statsd(RunningJob.report_success)
+    report_failure = _report_to_statsd(RunningJob.report_failure)
+    report_permanent_failure = _report_to_statsd(RunningJob.report_permanent_failure)

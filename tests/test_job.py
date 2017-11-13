@@ -394,3 +394,60 @@ jobs:
     loop = asyncio.get_event_loop()
     with pytest.raises(RuntimeError):
         loop.run_until_complete(job.cancel())
+
+
+def test_statsd():
+
+    loop = asyncio.get_event_loop()
+    received = []
+
+    async def run():
+        class UDPServerProtocol:
+
+            def connection_made(self, transport):
+                self.transport = transport
+
+            def datagram_received(self, data, addr):
+                message = data.decode()
+                print('message received:', repr(message))
+                received.append(message)
+
+            def connection_lost(*_):
+                pass
+
+        listen = loop.create_datagram_endpoint(
+            UDPServerProtocol, local_addr=('127.0.0.1', 0))
+        transport, protocol = await listen
+
+        host, port = transport.get_extra_info('sockname')
+        print(host, port)
+
+        job_config = yacron.config.parse_config_string('''
+jobs:
+  - name: test
+    command: echo "hello"
+    schedule: "* * * * *"
+    statsd:
+      host: 127.0.0.1
+      port: %i
+      prefix: test
+''' % port)[0]
+
+        job = yacron.job.RunningJob(job_config, None)
+
+        assert isinstance(job, yacron.job.RunningJobWithStatsd)
+
+        await job.start()
+        await job.wait()
+        await job.report_success()
+        await asyncio.sleep(0.05)
+        transport.close()
+        await asyncio.sleep(0.01)
+
+    loop.run_until_complete(run())
+
+    assert received
+    assert any('test.start' in r for r in received)
+    assert any('test.stop' in r for r in received)
+    assert any('test.duration' in r for r in received)
+    assert any('test.success' in r for r in received)
