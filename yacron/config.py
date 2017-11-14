@@ -91,6 +91,7 @@ DEFAULT_CONFIG = {
     'environment': [],
     'executionTimeout': None,
     'killTimeout': 30,
+    'runOnStartup': False,
 }
 
 
@@ -145,6 +146,7 @@ _job_defaults_common = {
     })),
     Opt("executionTimeout"): Float(),
     Opt("killTimeout"): Float(),
+    Opt("runOnStartup"): Bool(),
 }
 
 _job_schema_dict = dict(_job_defaults_common)
@@ -218,6 +220,7 @@ class JobConfig:
         self.environment = config.pop('environment')
         self.executionTimeout = config.pop('executionTimeout')
         self.killTimeout = config.pop('killTimeout')
+        self.runOnStartup = config.pop('runOnStartup')
 
 
 def parse_config_file(path: str) -> List[JobConfig]:

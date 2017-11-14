@@ -58,6 +58,7 @@ class Cron:
         self._wait_for_running_jobs_task = \
             create_task(self._wait_for_running_jobs())
 
+        startUp=True
         while not self._stop_event.is_set():
             try:
                 self.update_config()
@@ -66,7 +67,8 @@ class Cron:
                              "any of the config.:\n%s", str(err))
             except Exception as exc:  # pragma: nocover
                 logger.exception("please report this as a bug (1)")
-            await self.spawn_jobs()
+            await self.spawn_jobs(startUp)
+            startUp=False
             sleep_interval = next_sleep_interval()
             logger.debug("Will sleep for %.1f seconds", sleep_interval)
             try:
@@ -91,15 +93,20 @@ class Cron:
         config = parse_config(self.config_arg)
         self.cron_jobs = OrderedDict((job.name, job) for job in config)
 
-    async def spawn_jobs(self) -> None:
+    async def spawn_jobs(self,startUp) -> None:
         now = get_now()
         for job in self.cron_jobs.values():
-            if job.schedule.test(now):
-                logger.debug("Job %s (%s) is scheduled for now",
+            if job.runOnStartup and startUp:
+                logger.debug("Job %s (%s) is scheduled for startup",
                              job.name, job.schedule_unparsed)
                 await self.launch_scheduled_job(job)
             else:
-                logger.debug("Job %s (%s) not scheduled for now",
+                if job.schedule.test(now):
+                    logger.debug("Job %s (%s) is scheduled for now",
+                             job.name, job.schedule_unparsed)
+                    await self.launch_scheduled_job(job)
+                else:
+                    logger.debug("Job %s (%s) not scheduled for now",
                              job.name, job.schedule_unparsed)
 
     async def launch_scheduled_job(self, job: JobConfig) -> None:
