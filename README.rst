@@ -87,10 +87,11 @@ configuration:
         schedule: "*/5 * * * *"
 
 
-The `schedule` option can be a string in the traditional crontab format, or can
-be an object with properties.  The following configuration runs a command every
-5 minutes, but only on the specific date 2017-07-19, and doesn't run it in any
-other date:
+The `schedule` option can be a string in the traditional crontab format
+(including @reboot, which will only run the job when yacron is initially
+executed), or can be an object with properties.  The following configuration
+runs a command every 5 minutes, but only on the specific date 2017-07-19, and
+doesn't run it in any other date:
 
 .. code-block:: yaml
 
@@ -258,6 +259,7 @@ You can instruct yacron how to determine if a job has failed or not via the
     producesStdout: false
     producesStderr: true
     nonzeroReturn: true
+    always: false
 
 producesStdout
     If true, any captured standard output causes yacron to consider the job
@@ -270,6 +272,10 @@ producesStderr
 nonzeroReturn
     If true, if the job process returns a code other than zero causes yacron
     to consider the job as failed.  This is true by default.
+
+always
+    If true, if the job process exits that causes yacron to consider the job as
+    failed.  This is false by default.
 
 It is possible to instruct yacron to retry failing cron jobs by adding a
 ``retry`` option inside ``onFailure``:
@@ -298,7 +304,10 @@ It is possible to instruct yacron to retry failing cron jobs by adding a
 
 The above settings tell yacron to retry the job up to 10 times, with the delay
 between retries defined by an exponential backoff process: initially 1 second,
-doubling for every retry up to a maximum of 30 seconds.
+doubling for every retry up to a maximum of 30 seconds. A value of -1 for
+maximumRetries will mean yacron will keep retrying forever, this is mostly
+useful with a schedfule of "@reboot" to restart a long running process when it
+has failed.
 
 If the cron job is expected to fail sometimes, you may wish to report only in
 the case the cron job ultimately fails after all retries and we give up on it.

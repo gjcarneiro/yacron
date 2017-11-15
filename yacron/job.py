@@ -52,13 +52,14 @@ class StreamReader:
                 return
             sys.stdout.write(prefix + line)
             sys.stdout.flush()
-            if len(self.save_top) < limit_top:
-                self.save_top.append(line)
-            else:
-                if len(self.save_bottom) == limit_bottom:
-                    del self.save_bottom[0]
-                    self.discarded_lines += 1
-                self.save_bottom.append(line)
+            if self.save_limit > 0:
+                if len(self.save_top) < limit_top:
+                    self.save_top.append(line)
+                else:
+                    if len(self.save_bottom) == limit_bottom:
+                        del self.save_bottom[0]
+                        self.discarded_lines += 1
+                    self.save_bottom.append(line)
 
     async def join(self) -> str:
         await self._reader
@@ -252,6 +253,8 @@ class RunningJob:
 
     @property
     def failed(self) -> bool:
+        if self.config.failsWhen['always']:
+            return True
         if self.config.failsWhen['nonzeroReturn'] and self.retcode != 0:
             return True
         if self.config.failsWhen['producesStdout'] and self.stdout:
