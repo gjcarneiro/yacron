@@ -396,8 +396,11 @@ jobs:
         loop.run_until_complete(job.cancel())
 
 
-def test_statsd():
-
+@pytest.mark.parametrize('command', [
+    'echo "hello"',
+    'exit 1',
+])
+def test_statsd(command):
     loop = asyncio.get_event_loop()
     received = []
 
@@ -408,9 +411,9 @@ def test_statsd():
                 self.transport = transport
 
             def datagram_received(self, data, addr):
+                print('Statsd UDP packet received:', data)
                 message = data.decode()
-                print('message received:', repr(message))
-                received.append(message)
+                received.extend(m for m in message.split('\n') if m)
 
             def connection_lost(*_):
                 pass
@@ -420,34 +423,34 @@ def test_statsd():
         transport, protocol = await listen
 
         host, port = transport.get_extra_info('sockname')
-        print(host, port)
+        print('Listening UDP on %s:%s' % (host, port))
 
         job_config = yacron.config.parse_config_string('''
 jobs:
   - name: test
-    command: echo "hello"
+    command: {command}
     schedule: "* * * * *"
     statsd:
       host: 127.0.0.1
-      port: %i
-      prefix: test
-''' % port)[0]
+      port: {port}
+      prefix: the.prefix
+'''.format(port=port, command=command))[0]
 
         job = yacron.job.RunningJob(job_config, None)
 
-        assert isinstance(job, yacron.job.RunningJobWithStatsd)
-
         await job.start()
         await job.wait()
-        await job.report_success()
         await asyncio.sleep(0.05)
         transport.close()
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
+        return job
 
-    loop.run_until_complete(run())
+    job = loop.run_until_complete(run())
 
     assert received
-    assert any('test.start' in r for r in received)
-    assert any('test.stop' in r for r in received)
-    assert any('test.duration' in r for r in received)
-    assert any('test.success' in r for r in received)
+    assert len(received) == 4
+    assert 'the.prefix.start' in received[0]
+    assert any('the.prefix.stop' in r for r in received[1:])
+    success = 0 if job.failed else 1
+    assert any('the.prefix.success:%i' % success in r for r in received[1:])
+    assert any('the.prefix.duration' in r for r in received[1:])

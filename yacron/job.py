@@ -15,7 +15,7 @@ import aiosmtplib
 import jinja2
 
 from yacron.config import JobConfig
-from yacron.statsd import send_to_statsd
+from yacron.statsd import StatsdJobMetricWriter
 
 logger = logging.getLogger('yacron')
 
@@ -170,16 +170,6 @@ class RunningJob:
         MailReporter(),
     ]  # type: List[Reporter]
 
-    def __new__(
-        cls,
-        config: JobConfig,
-        retry_state: Optional[JobRetryState]
-    ) -> Union['RunningJob', 'RunningJobWithStatsd']:
-        if config.statsd is None:
-            return super().__new__(cls)
-        else:
-            return super().__new__(RunningJobWithStatsd)
-
     def __init__(self, config: JobConfig,
                  retry_state: Optional[JobRetryState]) -> None:
         self.config = config
@@ -192,6 +182,25 @@ class RunningJob:
         self.execution_deadline = None  # type: Optional[float]
         self.retry_state = retry_state
         self.env = None  # type: Optional[Dict[str, str]]
+
+        statsd_config = self.config.statsd
+        if statsd_config is not None:
+            self.statsd_writer = StatsdJobMetricWriter(
+                host=statsd_config['host'],
+                port=statsd_config['port'],
+                prefix=statsd_config['prefix'],
+                job=self,
+            )
+        else:
+            self.statsd_writer = None
+
+    async def _on_start(self) -> None:
+        if self.statsd_writer:
+            await self.statsd_writer.job_started()
+
+    async def _on_stop(self) -> None:
+        if self.statsd_writer:
+            await self.statsd_writer.job_stopped()
 
     async def start(self) -> None:
         if self.proc is not None:
@@ -224,6 +233,8 @@ class RunningJob:
 
         self.proc = await create(*cmd, **kwargs)
 
+        await self._on_start()
+
         if self.config.captureStderr:
             assert self.proc.stderr is not None
             self._stderr_reader = \
@@ -240,6 +251,7 @@ class RunningJob:
             raise RuntimeError("process is not running")
         if self.execution_deadline is None:
             self.retcode = await self.proc.wait()
+            await self._on_stop()
         else:
             timeout = self.execution_deadline - time.perf_counter()
             try:
@@ -248,6 +260,7 @@ class RunningJob:
                         self.proc.wait(),
                         timeout,
                     )
+                    await self._on_stop()
                 else:
                     raise asyncio.TimeoutError
             except asyncio.TimeoutError:
@@ -282,6 +295,7 @@ class RunningJob:
                            "%.1f seconds, killing it...",
                            self.config.name, self.config.killTimeout)
             self.proc.kill()
+        await self._on_stop()
 
     async def report_failure(self):
         logger.info("Cron job %s: reporting failure", self.config.name)
@@ -321,47 +335,3 @@ class RunningJob:
             'shell': self.config.shell,
             'environment': self.env,
         }
-
-
-class RunningJobWithStatsd(RunningJob):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        statsd_config = self.config.statsd
-        self.prefix = statsd_config['prefix']
-        self.statsd_host = statsd_config['host']
-        self.statsd_port = statsd_config['port']
-        self.start_time = None
-
-    async def start(self):
-        await super().start()
-        await send_to_statsd(
-            self.statsd_host,
-            self.statsd_port,
-            '{prefix}.start:1|g\n'.format(prefix=self.prefix)
-        )
-        self.start_time = time.perf_counter()
-
-    def _report_to_statsd(method):
-        async def wrapper(self, *args, **kwargs):
-            duration_seconds = time.perf_counter() - self.start_time
-            duration = int(round(duration_seconds * 1000))
-            await send_to_statsd(
-                self.statsd_host,
-                self.statsd_port,
-                (
-                    '{prefix}.stop:1|g\n'
-                    '{prefix}.success:{success}|g\n'
-                    '{prefix}.duration:{duration}|ms|@0.1\n'
-                ).format(
-                    prefix=self.prefix,
-                    success=int(not self.failed),
-                    duration=duration,
-                ),
-            )
-            await method(self, *args, **kwargs)
-        return wrapper
-
-    report_success = _report_to_statsd(RunningJob.report_success)
-    report_failure = _report_to_statsd(RunningJob.report_failure)
-    report_permanent_failure = _report_to_statsd(RunningJob.report_permanent_failure)
