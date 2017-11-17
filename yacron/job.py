@@ -6,7 +6,7 @@ import sys
 import time
 from email.mime.text import MIMEText
 from socket import gethostname
-from typing import Any, Awaitable, Dict, List, Optional, Union  # noqa
+from typing import Any, Awaitable, Dict, List, Optional, Union, Tuple  # noqa
 
 from raven import Client
 from raven_aiohttp import AioHttpTransport
@@ -64,7 +64,7 @@ class StreamReader:
             else:
                 self.discarded_lines += 1
 
-    async def join(self) -> str:
+    async def join(self) -> Tuple[str, int]:
         await self._reader
         if self.save_bottom:
             middle = (["   [.... {} lines discarded ...]\n"
