@@ -6,7 +6,7 @@ import sys
 import time
 from email.mime.text import MIMEText
 from socket import gethostname
-from typing import Any, Awaitable, Dict, List, Optional  # noqa
+from typing import Any, Awaitable, Dict, List, Optional, Union  # noqa
 
 from raven import Client
 from raven_aiohttp import AioHttpTransport
@@ -15,6 +15,7 @@ import aiosmtplib
 import jinja2
 
 from yacron.config import JobConfig
+from yacron.statsd import StatsdJobMetricWriter
 
 logger = logging.getLogger('yacron')
 
@@ -182,6 +183,25 @@ class RunningJob:
         self.retry_state = retry_state
         self.env = None  # type: Optional[Dict[str, str]]
 
+        statsd_config = self.config.statsd
+        if statsd_config is not None:
+            self.statsd_writer = StatsdJobMetricWriter(
+                host=statsd_config['host'],
+                port=statsd_config['port'],
+                prefix=statsd_config['prefix'],
+                job=self,
+            )
+        else:
+            self.statsd_writer = None
+
+    async def _on_start(self) -> None:
+        if self.statsd_writer:
+            await self.statsd_writer.job_started()
+
+    async def _on_stop(self) -> None:
+        if self.statsd_writer:
+            await self.statsd_writer.job_stopped()
+
     async def start(self) -> None:
         if self.proc is not None:
             raise RuntimeError("process already running")
@@ -213,6 +233,8 @@ class RunningJob:
 
         self.proc = await create(*cmd, **kwargs)
 
+        await self._on_start()
+
         if self.config.captureStderr:
             assert self.proc.stderr is not None
             self._stderr_reader = \
@@ -229,6 +251,7 @@ class RunningJob:
             raise RuntimeError("process is not running")
         if self.execution_deadline is None:
             self.retcode = await self.proc.wait()
+            await self._on_stop()
         else:
             timeout = self.execution_deadline - time.perf_counter()
             try:
@@ -237,6 +260,7 @@ class RunningJob:
                         self.proc.wait(),
                         timeout,
                     )
+                    await self._on_stop()
                 else:
                     raise asyncio.TimeoutError
             except asyncio.TimeoutError:
@@ -271,6 +295,7 @@ class RunningJob:
                            "%.1f seconds, killing it...",
                            self.config.name, self.config.killTimeout)
             self.proc.kill()
+        await self._on_stop()
 
     async def report_failure(self):
         logger.info("Cron job %s: reporting failure", self.config.name)
