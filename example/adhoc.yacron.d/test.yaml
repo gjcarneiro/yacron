@@ -31,6 +31,12 @@ defaults:
       value: foo
     - key: BAR
       value: bar
+
+  statsd:
+    host: localhost
+    port: 8125
+    prefix: my.cron.jobs.prefix.test01
+
 jobs:
   - name: test-01
     command:
@@ -46,6 +52,7 @@ jobs:
         initialDelay: 1
         maximumDelay: 30
         backoffMultiplier: 2
+
 
   - name: test-02
     command: |
