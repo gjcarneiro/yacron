@@ -3,12 +3,12 @@ import asyncio.subprocess
 import datetime
 import logging
 from collections import OrderedDict, defaultdict
-from typing import Any, Awaitable, Dict, List, Optional  # noqa
+from typing import Any, Awaitable, Dict, List, Optional, Union  # noqa
 
 from yacron.config import (JobConfig, parse_config, ConfigError,
                            parse_config_string)
 from yacron.job import RunningJob, JobRetryState
-
+from crontab import CronTab  # noqa
 
 logger = logging.getLogger('yacron')
 WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
@@ -58,6 +58,7 @@ class Cron:
         self._wait_for_running_jobs_task = \
             create_task(self._wait_for_running_jobs())
 
+        startup = True
         while not self._stop_event.is_set():
             try:
                 self.update_config()
@@ -66,7 +67,8 @@ class Cron:
                              "any of the config.:\n%s", str(err))
             except Exception as exc:  # pragma: nocover
                 logger.exception("please report this as a bug (1)")
-            await self.spawn_jobs()
+            await self.spawn_jobs(startup)
+            startup = False
             sleep_interval = next_sleep_interval()
             logger.debug("Will sleep for %.1f seconds", sleep_interval)
             try:
@@ -91,16 +93,22 @@ class Cron:
         config = parse_config(self.config_arg)
         self.cron_jobs = OrderedDict((job.name, job) for job in config)
 
-    async def spawn_jobs(self) -> None:
+    async def spawn_jobs(self, startup) -> None:
         now = get_now()
         for job in self.cron_jobs.values():
-            if job.schedule.test(now):
-                logger.debug("Job %s (%s) is scheduled for now",
+            if startup and job.schedule == "@reboot":
+                logger.debug("Job %s (%s) is scheduled for startup (@reboot)",
                              job.name, job.schedule_unparsed)
                 await self.launch_scheduled_job(job)
             else:
-                logger.debug("Job %s (%s) not scheduled for now",
-                             job.name, job.schedule_unparsed)
+                crontab = job.schedule  # type: CronTab
+                if crontab.test(now):
+                    logger.debug("Job %s (%s) is scheduled for now",
+                                 job.name, job.schedule_unparsed)
+                    await self.launch_scheduled_job(job)
+                else:
+                    logger.debug("Job %s (%s) not scheduled for now",
+                                 job.name, job.schedule_unparsed)
 
     async def launch_scheduled_job(self, job: JobConfig) -> None:
         await self.cancel_job_retries(job.name)
@@ -213,7 +221,8 @@ class Cron:
             else:
                 state.task.cancel()
         retry = job.config.onFailure['retry']
-        if state.count >= retry['maximumRetries']:
+        if (state.count >= retry['maximumRetries'] and
+                retry['maximumRetries'] != -1):
             await self.cancel_job_retries(job.config.name)
             await job.report_permanent_failure()
         else:
