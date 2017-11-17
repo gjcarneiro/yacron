@@ -246,6 +246,35 @@ Example:
             (exit code: {{exit_code}})
 
 
+Metrics
++++++++++
+
+Yacron has builtin support for writing job metrics to Statsd_:
+
+.. _Statsd: https://github.com/etsy/statsd
+
+.. code-block:: yaml
+
+    jobs:
+      - name: test01
+        command: echo "hello"
+        schedule: "* * * * *"
+        statsd:
+          host: my-statsd.exemple.com
+          port: 8125
+          prefix: my.cron.jobs.prefix.test01
+
+With this config Yacron will write the following metrics over UDP
+to the Statsd listening on ``my-statsd.exemple.com:8125``:
+
+.. code-block::
+
+  my.cron.jobs.prefix.test01.start:1|g  # this one is sent when the job starts
+  my.cron.jobs.prefix.test01.stop:1|g   # the rest are sent when the job stops
+  my.cron.jobs.prefix.test01.success:1|g
+  my.cron.jobs.prefix.test01.duration:3|ms|@0.1
+
+
 Handling failure
 ++++++++++++++++
 
