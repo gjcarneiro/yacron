@@ -7,26 +7,49 @@ import raven
 from unittest.mock import Mock, patch
 
 
-@pytest.mark.parametrize("save_limit, output", [
-    (10, 'line1\nline2\nline3\nline4\n'),
-    (1, '   [.... 3 lines discarded ...]\nline4\n'),
-    (2, 'line1\n   [.... 2 lines discarded ...]\nline4\n'),
+@pytest.mark.parametrize("save_limit, input_lines, output, expected_failure", [
+    (10,
+     b"line1\nline2\nline3\nline4\n",
+     'line1\nline2\nline3\nline4\n',
+     True),
+    (1,
+     b"line1\nline2\nline3\nline4\n",
+     '   [.... 3 lines discarded ...]\nline4\n',
+     True),
+    (2,
+     b"line1\nline2\nline3\nline4\n",
+     'line1\n   [.... 2 lines discarded ...]\nline4\n',
+     True),
+    (0, b"line1\nline2\nline3\nline4\n", '', True),
+    (0, b"", '', False),
 ])
-def test_stream_reader(save_limit, output):
+def test_stream_reader(save_limit, input_lines, output, expected_failure):
     loop = asyncio.get_event_loop()
     fake_stream = asyncio.StreamReader()
     reader = yacron.job.StreamReader("cronjob-1", "stderr", fake_stream,
                                      save_limit)
 
+    job_config = yacron.config.parse_config_string('''
+jobs:
+  - name: test
+    command: foo
+    schedule: "* * * * *"
+    captureStderr: true
+''')[0]
+    job = yacron.job.RunningJob(job_config, None)
+
     async def producer(fake_stream):
-        fake_stream.feed_data(b"line1\nline2\nline3\nline4\n")
+        fake_stream.feed_data(input_lines)
         fake_stream.feed_eof()
 
-    _, out = loop.run_until_complete(asyncio.gather(
+    job._stderr_reader = reader
+    job.retcode = 0
+    loop.run_until_complete(asyncio.gather(
         producer(fake_stream),
-        reader.join()))
+        job._read_job_streams()))
+    out = job.stderr
 
-    assert out == output
+    assert (out, job.failed) == (output, expected_failure)
 
 
 A_JOB = '''

@@ -339,7 +339,7 @@ The above settings tell yacron to retry the job up to 10 times, with the delay
 between retries defined by an exponential backoff process: initially 1 second,
 doubling for every retry up to a maximum of 30 seconds. A value of -1 for
 maximumRetries will mean yacron will keep retrying forever, this is mostly
-useful with a schedfule of "@reboot" to restart a long running process when it
+useful with a schedule of "@reboot" to restart a long running process when it
 has failed.
 
 If the cron job is expected to fail sometimes, you may wish to report only in

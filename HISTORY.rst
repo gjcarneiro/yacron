@@ -5,7 +5,13 @@ History
 0.6.0
 ------
 * Add custom Sentry fingerprint support
-* Ability to send job metrics to statsd (thanks bofm!)
+* Ability to send job metrics to statsd (thanks bofm)
+* `always` flag to consider any cron job that exits to be failed
+  (thanks evanjardineskinner)
+* `maximumRetries` can now be `-1` to never stop retrying (evanjardineskinner)
+* `schedule` can be the string `@reboot` to always run that cron job on startup
+  (evanjardineskinner)
+* `saveLimit` can be set to zero (evanjardineskinner)
 
 0.5.0
 ------------------

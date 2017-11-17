@@ -61,6 +61,8 @@ class StreamReader:
                         del self.save_bottom[0]
                         self.discarded_lines += 1
                     self.save_bottom.append(line)
+            else:
+                self.discarded_lines += 1
 
     async def join(self) -> str:
         await self._reader
@@ -71,7 +73,7 @@ class StreamReader:
             output = ''.join(self.save_top + middle + self.save_bottom)
         else:
             output = ''.join(self.save_top)
-        return output
+        return output, self.discarded_lines
 
 
 class Reporter:
@@ -180,6 +182,8 @@ class RunningJob:
         self._stdout_reader = None  # type: Optional[StreamReader]
         self.stderr = None  # type: Optional[str]
         self.stdout = None  # type: Optional[str]
+        self.stderr_discarded = 0
+        self.stdout_discarded = 0
         self.execution_deadline = None  # type: Optional[float]
         self.retry_state = retry_state
         self.env = None  # type: Optional[Dict[str, str]]
@@ -270,10 +274,15 @@ class RunningJob:
                             self.config.name, self.config.executionTimeout)
                 self.retcode = -100
                 await self.cancel()
+        await self._read_job_streams()
+
+    async def _read_job_streams(self):
         if self._stderr_reader:
-            self.stderr = await self._stderr_reader.join()
+            self.stderr, self.stderr_discarded = \
+                await self._stderr_reader.join()
         if self._stdout_reader:
-            self.stdout = await self._stdout_reader.join()
+            self.stdout, self.stdout_discarded = \
+                await self._stdout_reader.join()
 
     @property
     def failed(self) -> bool:
@@ -281,9 +290,11 @@ class RunningJob:
             return True
         if self.config.failsWhen['nonzeroReturn'] and self.retcode != 0:
             return True
-        if self.config.failsWhen['producesStdout'] and self.stdout:
+        if (self.config.failsWhen['producesStdout'] and
+                self.stdout or self.stdout_discarded):
             return True
-        if self.config.failsWhen['producesStderr'] and self.stderr:
+        if (self.config.failsWhen['producesStderr'] and
+                self.stderr or self.stderr_discarded):
             return True
         return False
 
