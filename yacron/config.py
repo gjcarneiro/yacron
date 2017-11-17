@@ -201,10 +201,12 @@ class JobConfig:
         self.name = config['name']  # type: str
         self.command = config['command']  # type: Union[str, List[str]]
         self.schedule_unparsed = config.pop('schedule')
-        if isinstance(self.schedule_unparsed, str) and self.schedule_unparsed == "@reboot":
-            self.schedule = "@reboot"
-        elif isinstance(self.schedule_unparsed, str):
-            self.schedule = CronTab(self.schedule_unparsed)  # type: CronTab
+        if isinstance(self.schedule_unparsed, str):
+            if self.schedule_unparsed in {"@reboot"}:
+                self.schedule = \
+                    self.schedule_unparsed  # type: Union[CronTab, str]
+            else:
+                self.schedule = CronTab(self.schedule_unparsed)
         elif isinstance(self.schedule_unparsed, dict):
             minute = self.schedule_unparsed.get("minute", "*")
             hour = self.schedule_unparsed.get("hour", "*")

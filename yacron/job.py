@@ -191,7 +191,7 @@ class RunningJob:
                 port=statsd_config['port'],
                 prefix=statsd_config['prefix'],
                 job=self,
-            )
+            )  # type: Optional[StatsdJobMetricWriter]
         else:
             self.statsd_writer = None
 

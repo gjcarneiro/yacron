@@ -3,5 +3,6 @@ tox==2.3.1
 coverage==4.1
 pytest
 pytest-cov
+mypy==0.550
 
 
