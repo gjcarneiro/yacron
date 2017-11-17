@@ -72,6 +72,7 @@ DEFAULT_CONFIG = {
         'producesStdout': False,
         'producesStderr': True,
         'nonzeroReturn': True,
+        'always': False,
     },
     'onFailure': {
         'retry': {
@@ -124,6 +125,7 @@ _job_defaults_common = {
         "producesStdout": Bool(),
         Opt("producesStderr"): Bool(),
         Opt("nonzeroReturn"): Bool(),
+        Opt("always"): Bool(),
     }),
     Opt("onFailure"): Map({
         Opt("retry"): Map({
@@ -199,7 +201,9 @@ class JobConfig:
         self.name = config['name']  # type: str
         self.command = config['command']  # type: Union[str, List[str]]
         self.schedule_unparsed = config.pop('schedule')
-        if isinstance(self.schedule_unparsed, str):
+        if isinstance(self.schedule_unparsed, str) and self.schedule_unparsed == "@reboot":
+            self.schedule = "@reboot"
+        elif isinstance(self.schedule_unparsed, str):
             self.schedule = CronTab(self.schedule_unparsed)  # type: CronTab
         elif isinstance(self.schedule_unparsed, dict):
             minute = self.schedule_unparsed.get("minute", "*")
