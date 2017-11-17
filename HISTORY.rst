@@ -5,6 +5,7 @@ History
 0.6.0
 ------
 * Add custom Sentry fingerprint support
+* Ability to send job metrics to statsd (thanks bofm!)
 
 0.5.0
 ------------------
