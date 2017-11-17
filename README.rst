@@ -162,11 +162,15 @@ email and Sentry (additional reporting methods might be added in the future):
     onFailure:
       report:
         sentry:
-           dsn:
-             value: example
-             # Alternatively:
-             # fromFile: /etc/secrets/my-secret-dsn
-             # fromEnvVar: SENTRY_DSN
+          dsn:
+            value: example
+            # Alternatively:
+            # fromFile: /etc/secrets/my-secret-dsn
+            # fromEnvVar: SENTRY_DSN
+          fingerprint:  # optional, since yacron 0.6
+            - yacron
+            - "{{ environment.HOSTNAME }}"
+            - "{{ name }}"
         mail:
           from: example@foo.com
           to: example@bar.com

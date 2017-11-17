@@ -2,6 +2,10 @@
 History
 =======
 
+0.6.0
+------
+* Add custom Sentry fingerprint support
+
 0.5.0
 ------------------
 * Templating support for reports
