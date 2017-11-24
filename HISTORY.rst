@@ -2,8 +2,8 @@
 History
 =======
 
-0.6.0
-------
+0.6.0 (2017-11-24)
+------------------
 * Add custom Sentry fingerprint support
 * Ability to send job metrics to statsd (thanks bofm)
 * `always` flag to consider any cron job that exits to be failed
