@@ -175,7 +175,7 @@ email and Sentry (additional reporting methods might be added in the future):
         mail:
           from: example@foo.com
           to: example@bar.com
-          smtp_host: 127.0.0.1
+          smtpHost: 127.0.0.1
 
 Here, the ``onFailure`` object indicates that what to do when a job failure
 is detected.  In this case we ask for it to be reported both to sentry and by
@@ -203,7 +203,7 @@ It is possible also to report job success, as well as failure, via the
         mail:
           from: example@foo.com
           to: example@bar.com
-          smtp_host: 127.0.0.1
+          smtpHost: 127.0.0.1
 
 Since yacron 0.5, it is possible to customise the format of the report. For
 ``mail`` reporting, the option ``subject`` indicates what is the subject of the
@@ -240,7 +240,7 @@ Example:
         mail:
           from: example@foo.com
           to: example@bar.com
-          smtp_host: 127.0.0.1
+          smtpHost: 127.0.0.1
           subject: Cron job '{{name}}' {% if success %}completed{% else %}failed{% endif %}
           body: |
             {{stderr}}
@@ -328,7 +328,7 @@ It is possible to instruct yacron to retry failing cron jobs by adding a
         mail:
           from: example@foo.com
           to: example@bar.com
-          smtp_host: 127.0.0.1
+          smtpHost: 127.0.0.1
       retry:
         maximumRetries: 10
         initialDelay: 1
@@ -367,7 +367,7 @@ For that situation, you can use the ``onPermanentFailure`` option:
         mail:
           from: example@foo.com
           to: example@bar.com
-          smtp_host: 127.0.0.1
+          smtpHost: 127.0.0.1
 
 Concurrency
 +++++++++++
