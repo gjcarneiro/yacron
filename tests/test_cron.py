@@ -13,7 +13,7 @@ import pytest
 def fixed_current_time(monkeypatch):
     FIXED_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
                                    minute=0, second=0)
-    def get_now():
+    def get_now(utc):
         return FIXED_TIME
     monkeypatch.setattr("yacron.cron.get_now", get_now)
 
@@ -248,7 +248,7 @@ def test_concurrency_policy(monkeypatch, policy,
 
     t0 = time.perf_counter()
 
-    def get_now():
+    def get_now(utc):
         return (START_TIME +
                 datetime.timedelta(seconds=(time.perf_counter() - t0)))
     monkeypatch.setattr("yacron.cron.get_now", get_now)
@@ -331,7 +331,7 @@ def test_concurrency_and_backoff(monkeypatch):
 
     t0 = time.perf_counter()
 
-    def get_now():
+    def get_now(utc):
         return (START_TIME +
                 datetime.timedelta(seconds=(time.perf_counter() - t0)))
 
@@ -350,7 +350,7 @@ def test_concurrency_and_backoff(monkeypatch):
         known_jobs = {}
         pending_jobs = set()
         running_jobs = set()
-        while get_now() < STOP_TIME:
+        while get_now(True) < STOP_TIME:
             try:
                 ts, event, job = await asyncio.wait_for(
                     TracingRunningJob._TRACE.get(), 0.1)

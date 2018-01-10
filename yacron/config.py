@@ -68,6 +68,7 @@ DEFAULT_CONFIG = {
     'captureStderr': True,
     'captureStdout': False,
     'saveLimit': 4096,
+    'utc': True,
     'failsWhen': {
         'producesStdout': False,
         'producesStderr': True,
@@ -121,6 +122,7 @@ _job_defaults_common = {
     Opt("captureStderr"): Bool(),
     Opt("captureStdout"): Bool(),
     Opt("saveLimit"): Int(),
+    Opt("utc"): Bool(),
     Opt("failsWhen"): Map({
         "producesStdout": Bool(),
         Opt("producesStderr"): Bool(),
@@ -223,6 +225,7 @@ class JobConfig:
         self.captureStderr = config.pop('captureStderr')
         self.captureStdout = config.pop('captureStdout')
         self.saveLimit = config.pop('saveLimit')
+        self.utc = config.pop('utc')
         self.failsWhen = config.pop('failsWhen')
         self.onFailure = config.pop('onFailure')
         self.onPermanentFailure = config.pop('onPermanentFailure')

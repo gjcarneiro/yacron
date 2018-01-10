@@ -14,12 +14,15 @@ logger = logging.getLogger('yacron')
 WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
 
 
-def get_now() -> datetime.datetime:
-    return datetime.datetime.utcnow()  # pragma: no cover
+def get_now(utc: bool) -> datetime.datetime:
+    if utc:  # pragma: no cover
+        return datetime.datetime.utcnow()
+    else:
+        return datetime.datetime.now()
 
 
 def next_sleep_interval() -> float:
-    now = get_now()
+    now = get_now(False)
     target = (datetime.datetime(now.year, now.month, now.day,
                                 now.hour, now.minute) +
               WAKEUP_INTERVAL)
@@ -94,7 +97,6 @@ class Cron:
         self.cron_jobs = OrderedDict((job.name, job) for job in config)
 
     async def spawn_jobs(self, startup) -> None:
-        now = get_now()
         for job in self.cron_jobs.values():
             if startup and job.schedule == "@reboot":
                 logger.debug("Job %s (%s) is scheduled for startup (@reboot)",
@@ -102,7 +104,7 @@ class Cron:
                 await self.launch_scheduled_job(job)
             else:
                 crontab = job.schedule  # type: CronTab
-                if crontab.test(now):
+                if crontab.test(get_now(job.utc)):
                     logger.debug("Job %s (%s) is scheduled for now",
                                  job.name, job.schedule_unparsed)
                     await self.launch_scheduled_job(job)

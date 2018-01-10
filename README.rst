@@ -105,6 +105,20 @@ doesn't run it in any other date:
           year: 2017
           dayOfWeek: "*"
 
+Important: by default all time is interpreted to be in UTC, but you can
+request to use local time instead.  For instance, the cron job below runs
+every day at 19h27 *local time* because of the ``utc: false`` option:
+
+.. code-block:: yaml
+
+  jobs:
+    - name: test-01
+      command: echo "hello"
+      schedule: "27 19 * * *"
+      utc: false
+      captureStdout: true
+
+
 You can ask for environment variables to be defined for command execution:
 
 .. code-block:: yaml
@@ -133,6 +147,7 @@ Although cron jobs can still override the defaults, as needed:
           - key: PATH
             value: /bin:/usr/bin
         shell: /bin/bash
+        utc: false
     jobs:
       - name: test-01
         command: echo "foobar"  # runs with /bin/bash as shell
