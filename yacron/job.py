@@ -135,7 +135,7 @@ class MailReporter(Reporter):
         tmpl_vars = job.template_vars
         body_tmpl = jinja2.Template(mail['body'])
         body = body_tmpl.render(tmpl_vars)
-        if success and not body:
+        if success and not body.strip():
             logger.debug("body is empty, not sending email")
         subject_tmpl = jinja2.Template(mail['subject'])
         subject = subject_tmpl.render(tmpl_vars)
