@@ -1,0 +1,26 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: yacrondemo
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: yacrondemo
+    spec:
+      containers:
+      - name: yacrondemo
+        image: yacrondemo
+        imagePullPolicy: Never
+        resources:
+          limits:
+            cpu: 200m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        env:
+          - name: PYTHONIOENCODING
+            value: "utf-8"

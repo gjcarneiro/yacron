@@ -1,0 +1,10 @@
+defaults:
+  environment:
+    - key: PYTHONIOENCODING
+      value: utf-8
+
+jobs:
+  - name: test-01
+    command: echo "hello from $HOSTNAME"
+    schedule: "*/2 * * * *"
+    captureStdout: true

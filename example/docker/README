@@ -1,0 +1,28 @@
+A simple example of how to add yacron to a docker image.  To try it out,
+run for instance:
+
+	$ docker build -t yacrondemo .
+	$ docker run -ti yacrondemo -l DEBUG  # Ctrl-C to stop
+
+Moreover, you can find an example of deploying to Kubernetes in the
+``k8s-deploy.yaml`` file.  To test:
+
+	$ kubectl apply -f k8s-deploy.yaml
+	deployment "yacrondemo" created
+
+Check that the pod was created:
+
+	$ kubectl get pods -l app=yacrondemo
+	NAME                         READY     STATUS    RESTARTS   AGE
+	yacrondemo-cffff957f-9dt5r   1/1       Running   0          1m
+
+Follow the logs from the pod:
+
+	$ kubectl logs --timestamps -f yacrondemo-cffff957f-9dt5r
+
+(hit Ctrl-C to stop following logs)
+
+To undo the changes and stop the pod:
+
+	$ kubectl delete deployment yacrondemo
+	deployment "yacrondemo" deleted

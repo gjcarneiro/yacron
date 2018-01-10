@@ -6,7 +6,8 @@ History
 --------------
 
 * Added the ``utc`` option and document that times are utc by default (#17);
-* If an email body is empty, skip sending it.
+* If an email body is empty, skip sending it;
+* Added docker and k8s example.
 
 
 0.6.0 (2017-11-24)
