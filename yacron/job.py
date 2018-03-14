@@ -293,10 +293,10 @@ class RunningJob:
         if self.config.failsWhen['nonzeroReturn'] and self.retcode != 0:
             return True
         if (self.config.failsWhen['producesStdout'] and
-                self.stdout or self.stdout_discarded):
+                (self.stdout or self.stdout_discarded)):
             return True
         if (self.config.failsWhen['producesStderr'] and
-                self.stderr or self.stderr_discarded):
+                (self.stderr or self.stderr_discarded)):
             return True
         return False
 
