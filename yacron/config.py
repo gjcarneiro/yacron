@@ -4,7 +4,7 @@ from typing import Union  # noqa
 from typing import List, Optional
 
 import strictyaml
-from strictyaml import Optional as Opt
+from strictyaml import Optional as Opt, EmptyDict
 from strictyaml import Bool, EmptyNone, Enum, Float, Int, Map, Seq, Str
 from ruamel.yaml.error import YAMLError
 
@@ -171,7 +171,7 @@ _job_schema_dict.update({
     }),
 })
 
-CONFIG_SCHEMA = Map({
+CONFIG_SCHEMA = EmptyDict() | Map({
     Opt("defaults"): Map(_job_defaults_common),
     Opt("jobs"): Seq(Map(_job_schema_dict)),
 })

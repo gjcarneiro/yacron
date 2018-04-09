@@ -143,6 +143,6 @@ jobs:
                    'maximumRetries': 0}})
 
 
-def test_no_jobs_config1():
-    jobs = config.parse_config_string('defaults:\n  shell: bash')
+def test_empty_config1():
+    jobs = config.parse_config_string('')
     assert len(jobs) == 0
