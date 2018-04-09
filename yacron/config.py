@@ -173,7 +173,7 @@ _job_schema_dict.update({
 
 CONFIG_SCHEMA = Map({
     Opt("defaults"): Map(_job_defaults_common),
-    "jobs": Seq(Map(_job_schema_dict)),
+    Opt("jobs"): Seq(Map(_job_schema_dict)),
 })
 
 
@@ -251,7 +251,7 @@ def parse_config_string(data: str, path: Optional[str] = None,
 
     defaults = doc.get('defaults', {})
     jobs = []
-    for config_job in doc['jobs']:
+    for config_job in doc.get('jobs', []):
         job_dict = dict(mergedicts(DEFAULT_CONFIG, defaults))
         job_dict = dict(mergedicts(job_dict, config_job))
         jobs.append(JobConfig(job_dict))

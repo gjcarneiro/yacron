@@ -1,8 +1,9 @@
 flake8==2.6.0
 tox==2.3.1
 coverage==4.1
-pytest
-pytest-cov
+pluggy==0.6.0
+pytest==3.5.0
+pytest-cov==2.5.1
 mypy==0.550
 
 
