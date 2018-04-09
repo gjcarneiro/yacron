@@ -445,3 +445,26 @@ will send it a SIGKILL after half a second:
     captureStderr: true
     executionTimeout: 1
     killTimeout: 0.5
+
+Change to another user/group
+++++++++++++++++++++++++++++
+
+(new in version 0.8)
+
+You can request that Yacron change to another user and/or group for a specific
+cron job.  The field ``user`` indicates the user (uid or userame) under which
+the subprocess must be executed.  The field ``group`` (gid or group name)
+indicates the group id.  If only ``user`` is given, the group defaults to the
+main group of that user.  Example:
+
+.. code-block:: yaml
+
+  - name: test-03
+    command: id
+    schedule:
+      minute: "*"
+    captureStderr: true
+    user: www-data
+
+Naturally, yacron must be running as root in order to have permissions to
+change to another user.

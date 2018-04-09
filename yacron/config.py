@@ -1,3 +1,5 @@
+from pwd import getpwnam
+from grp import getgrnam
 import logging
 import os.path
 from typing import Union  # noqa
@@ -155,6 +157,8 @@ _job_defaults_common = {
         'host': Str(),
         'port': Int(),
     }),
+    Opt("user"): Str() | Int(),
+    Opt("group"): Str() | Int(),
 }
 
 _job_schema_dict = dict(_job_defaults_common)
@@ -234,6 +238,31 @@ class JobConfig:
         self.executionTimeout = config.pop('executionTimeout')
         self.killTimeout = config.pop('killTimeout')
         self.statsd = config.pop('statsd')
+
+        self.uid = None
+        self.gid = None
+
+        user = config.pop('user', None)
+        if user is not None:
+            if isinstance(user, int):
+                self.uid = user
+            else:
+                try:
+                    pw = getpwnam(user)
+                    self.uid = pw.pw_uid
+                    self.gid = pw.pw_gid
+                except KeyError:
+                    raise ConfigError("User not found: {!r}".format(user))
+
+        group = config.pop('group', None)
+        if group is not None:
+            if isinstance(group, int):
+                self.gid = group
+            else:
+                try:
+                    self.gid = getgrnam(group).gr_gid
+                except KeyError:
+                    raise ConfigError("Group not found: {!r}".format(group))
 
 
 def parse_config_file(path: str) -> List[JobConfig]:

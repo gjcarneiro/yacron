@@ -230,6 +230,8 @@ class RunningJob:
                 env[envvar['key']] = envvar['value']
                 self.env = env
             kwargs['env'] = env
+        if self.config.uid is not None or self.config.gid is not None:
+            kwargs['preexec_fn'] = self._demote
         logger.debug("%s: will execute argv %r", self.config.name, cmd)
         if self.config.captureStderr:
             kwargs['stderr'] = asyncio.subprocess.PIPE
@@ -253,6 +255,20 @@ class RunningJob:
             self._stdout_reader = \
                 StreamReader(self.config.name, 'stdout', self.proc.stdout,
                              self.config.saveLimit)
+
+    def _demote(self):
+        if self.config.gid is not None:
+            logger.debug("Changing to gid %r ...", self.config.gid)
+            try:
+                os.setgid(self.config.gid)
+            except OSError as ex:
+                raise RuntimeError("setgid: {}".format(ex))
+        if self.config.uid is not None:
+            logger.debug("Changing to uid %r ...", self.config.uid)
+            try:
+                os.setuid(self.config.uid)
+            except OSError as ex:
+                raise RuntimeError("setuid: {}".format(ex))
 
     async def wait(self) -> None:
         if self.proc is None:
