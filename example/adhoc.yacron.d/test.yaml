@@ -14,8 +14,12 @@ defaults:
   onPermanentFailure:
     report:
       sentry:
-         dsn:
-           value:
+        dsn:
+          value:
+        extra:
+          foo: bar
+          zbr: 123
+        level: warning
       mail:
         from: example@foo.com
         to: example@bar.com
@@ -26,6 +30,7 @@ defaults:
          {{stderr}}
 
          (exit code: {{exit_code}})
+
   environment:
     - key: FOO
       value: foo

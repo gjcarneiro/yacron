@@ -187,6 +187,10 @@ email and Sentry (additional reporting methods might be added in the future):
             - yacron
             - "{{ environment.HOSTNAME }}"
             - "{{ name }}"
+          extra:
+            foo: bar
+            zbr: 123
+          level: warning
         mail:
           from: example@foo.com
           to: example@bar.com

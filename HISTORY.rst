@@ -2,8 +2,13 @@
 History
 =======
 
-?.?.? (??????)
---------------
+0.8.0 (2018-05-14)
+------------------
+* Sentry: add new ``extra`` and ``level`` options.
+
+
+0.7.0 (2018-03-21)
+------------------
 
 * Added the ``utc`` option and document that times are utc by default (#17);
 * If an email body is empty, skip sending it;

@@ -5,7 +5,8 @@ from typing import List, Optional
 
 import strictyaml
 from strictyaml import Optional as Opt, EmptyDict
-from strictyaml import Bool, EmptyNone, Enum, Float, Int, Map, Seq, Str
+from strictyaml import (Bool, EmptyNone, Enum, Float, Int, Map, Seq, Str,
+                        MapPattern)
 from ruamel.yaml.error import YAMLError
 
 from crontab import CronTab
@@ -105,6 +106,8 @@ _report_schema = Map({
             Opt("fromEnvVar"): EmptyNone() | Str(),
         }),
         Opt("fingerprint"): Seq(Str()),
+        Opt("level"): Str(),
+        Opt("extra"): MapPattern(Str(), Str() | Int() | Bool()),
     }),
     Opt("mail"): Map({
         "from": EmptyNone() | Str(),

@@ -112,7 +112,9 @@ class SentryReporter(Reporter):
             'shell': job.config.shell,
             'success': success,
         }
-        logger.debug("sentry body: %r; fingerprint: %r", body, fingerprint)
+        extra.update(config.get('extra', {}))
+        logger.debug("sentry: body=%r; fingerprint=%r; extra=%r",
+                     body, fingerprint, extra)
         client = Client(transport=AioHttpTransport,
                         dsn=dsn,
                         string_max_length=4096)
@@ -120,6 +122,7 @@ class SentryReporter(Reporter):
             body,
             extra=extra,
             fingerprint=fingerprint,
+            level=config.get("level", "error"),
         )
 
 
