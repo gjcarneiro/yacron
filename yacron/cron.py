@@ -102,7 +102,7 @@ class Cron:
                 logger.debug("Job %s (%s) is scheduled for startup (@reboot)",
                              job.name, job.schedule_unparsed)
                 await self.launch_scheduled_job(job)
-            else:
+            elif isinstance(job.schedule, CronTab):
                 crontab = job.schedule  # type: CronTab
                 if crontab.test(get_now(job.utc)):
                     logger.debug("Job %s (%s) is scheduled for now",
