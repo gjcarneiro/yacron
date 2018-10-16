@@ -2,6 +2,10 @@
 History
 =======
 
+0.8.1 (2018-10-16)
+------------------
+* Fix a bug handling ``@reboot`` in schedule (#22)
+
 0.8.0 (2018-05-14)
 ------------------
 * Sentry: add new ``extra`` and ``level`` options.
