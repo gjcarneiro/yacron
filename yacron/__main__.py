@@ -13,6 +13,7 @@ def main_loop(loop):
     parser.add_argument('-c', "--config", default="/etc/yacron.d",
                         metavar="FILE-OR-DIR")
     parser.add_argument('-l', "--log-level", default="INFO")
+    parser.add_argument('-v', "--validate-config", default=False)
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level))
@@ -24,6 +25,10 @@ def main_loop(loop):
     except ConfigError as err:
         logger.error("Configuration error: %s", str(err))
         sys.exit(1)
+        
+    if args.validate_config == True:
+        logger.info("Configuration is valid.")
+        sys.exit(0)
 
     loop.add_signal_handler(signal.SIGINT, cron.signal_shutdown)
     loop.add_signal_handler(signal.SIGTERM, cron.signal_shutdown)
