@@ -2,6 +2,10 @@
 History
 =======
 
+0.9.0
+------------------
+* Added an option to just check if the yaml file is valid without running the scheduler.
+
 0.8.1 (2018-10-16)
 ------------------
 * Fix a bug handling ``@reboot`` in schedule (#22)
