@@ -5,6 +5,8 @@ History
 0.9.0
 ------------------
 * Added an option to just check if the yaml file is valid without running the scheduler.
+* Fix missing `body` in the schema for sentry config
+
 
 0.8.1 (2018-10-16)
 ------------------

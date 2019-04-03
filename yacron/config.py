@@ -108,6 +108,7 @@ _report_schema = Map({
         Opt("fingerprint"): Seq(Str()),
         Opt("level"): Str(),
         Opt("extra"): MapPattern(Str(), Str() | Int() | Bool()),
+        Opt("body"): Str(),
     }),
     Opt("mail"): Map({
         "from": EmptyNone() | Str(),
