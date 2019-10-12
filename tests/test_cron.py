@@ -11,10 +11,13 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def fixed_current_time(monkeypatch):
-    FIXED_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
-                                   minute=0, second=0)
+    FIXED_TIME = datetime.datetime(
+        year=1999, month=12, day=31, hour=12, minute=0, second=0
+    )
+
     def get_now(utc):
         return FIXED_TIME
+
     monkeypatch.setattr("yacron.cron.get_now", get_now)
 
 
@@ -46,8 +49,9 @@ class TracingRunningJob(RunningJob):
         await super().report_failure()
 
     async def report_permanent_failure(self):
-        self._TRACE.put_nowait((time.perf_counter(),
-                                "report_permanent_failure", self))
+        self._TRACE.put_nowait(
+            (time.perf_counter(), "report_permanent_failure", self)
+        )
         await super().report_permanent_failure()
 
     async def report_success(self):
@@ -55,30 +59,45 @@ class TracingRunningJob(RunningJob):
         await super().report_success()
 
 
-JOB_THAT_SUCCEEDS = '''
+JOB_THAT_SUCCEEDS = """
 jobs:
   - name: test
     command: |
       echo "foobar"
     schedule: "* * * * *"
-'''
+"""
 
-JOB_THAT_FAILS = '''
+JOB_THAT_FAILS = """
 jobs:
   - name: test
     command: |
       echo "foobar"
       exit 2
     schedule: "* * * * *"
-'''
+"""
 
 
-@pytest.mark.parametrize("config_yaml, expected_events", [
-    (JOB_THAT_SUCCEEDS, ['create', 'start', 'started', 'wait', 'waited',
-                         'report_success']),
-    (JOB_THAT_FAILS, ['create', 'start', 'started', 'wait', 'waited',
-                      'report_failure', 'report_permanent_failure']),
-])
+@pytest.mark.parametrize(
+    "config_yaml, expected_events",
+    [
+        (
+            JOB_THAT_SUCCEEDS,
+            ["create", "start", "started", "wait", "waited", "report_success"],
+        ),
+        (
+            JOB_THAT_FAILS,
+            [
+                "create",
+                "start",
+                "started",
+                "wait",
+                "waited",
+                "report_failure",
+                "report_permanent_failure",
+            ],
+        ),
+    ],
+)
 def test_simple(monkeypatch, config_yaml, expected_events):
     monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
     cron = yacron.cron.Cron(None, config_yaml=config_yaml)
@@ -95,18 +114,16 @@ def test_simple(monkeypatch, config_yaml, expected_events):
             else:
                 assert job is the_job
             events.append(event)
-            if event in {'report_success', 'report_permanent_failure'}:
+            if event in {"report_success", "report_permanent_failure"}:
                 break
         cron.signal_shutdown()
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(
-        wait_and_quit(),
-        cron.run()))
+    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
     assert events == expected_events
 
 
-RETRYING_JOB_THAT_FAILS = '''
+RETRYING_JOB_THAT_FAILS = """
 jobs:
   - name: test
     command: |
@@ -119,7 +136,7 @@ jobs:
         initialDelay: 0.1
         maximumDelay: 1
         backoffMultiplier: 2
-'''
+"""
 
 
 def test_fail_retry(monkeypatch):
@@ -142,30 +159,39 @@ def test_fail_retry(monkeypatch):
                 known_jobs[job] = jobnum
             print(ts, event, jobnum)
             events.append((jobnum, event))
-            if jobnum == 3 and event == 'report_permanent_failure':
+            if jobnum == 3 and event == "report_permanent_failure":
                 break
         cron.signal_shutdown()
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(
-        wait_and_quit(),
-        cron.run()))
+    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
     assert events == [
         # initial attempt
-        (1, 'create'),
-        (1, 'start'), (1, 'started'),
-        (1, 'wait'), (1, 'waited'),
-        (1, 'report_failure'),
+        (1, "create"),
+        (1, "start"),
+        (1, "started"),
+        (1, "wait"),
+        (1, "waited"),
+        (1, "report_failure"),
         # first retry
-        (2, 'create'), (2, 'start'), (2, 'started'),
-        (2, 'wait'), (2, 'waited'), (2, 'report_failure'),
+        (2, "create"),
+        (2, "start"),
+        (2, "started"),
+        (2, "wait"),
+        (2, "waited"),
+        (2, "report_failure"),
         # second retry
-        (3, 'create'), (3, 'start'), (3, 'started'),
-        (3, 'wait'), (3, 'waited'),
-        (3, 'report_failure'), (3, 'report_permanent_failure')]
+        (3, "create"),
+        (3, "start"),
+        (3, "started"),
+        (3, "wait"),
+        (3, "waited"),
+        (3, "report_failure"),
+        (3, "report_permanent_failure"),
+    ]
 
 
-JOB_THAT_HANGS = '''
+JOB_THAT_HANGS = """
 jobs:
   - name: test
     command: |
@@ -177,7 +203,7 @@ jobs:
     captureStdout: true
     executionTimeout: 0.25
     killTimeout: 0.25
-'''
+"""
 
 
 def test_execution_timeout(monkeypatch):
@@ -201,27 +227,29 @@ def test_execution_timeout(monkeypatch):
                 known_jobs[job] = jobnum
             print(ts, event, jobnum)
             events.append((jobnum, event))
-            if jobnum == 1 and event == 'report_permanent_failure':
+            if jobnum == 1 and event == "report_permanent_failure":
                 jobs_stdout[jobnum] = job.stdout
                 break
         cron.signal_shutdown()
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(
-        wait_and_quit(),
-        cron.run()))
+    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
     assert events == [
         # initial attempt
-        (1, 'create'),
-        (1, 'start'), (1, 'started'),
-        (1, 'wait'),
-        (1, 'cancel'), (1, 'cancelled'),
-        (1, 'waited'),
-        (1, 'report_failure'), (1, 'report_permanent_failure')]
-    assert jobs_stdout[1] == 'starting...\n'
+        (1, "create"),
+        (1, "start"),
+        (1, "started"),
+        (1, "wait"),
+        (1, "cancel"),
+        (1, "cancelled"),
+        (1, "waited"),
+        (1, "report_failure"),
+        (1, "report_permanent_failure"),
+    ]
+    assert jobs_stdout[1] == "starting...\n"
 
 
-CONCURRENT_JOB = '''
+CONCURRENT_JOB = """
 jobs:
   - name: test
     command: |
@@ -231,31 +259,39 @@ jobs:
     schedule: "* * * * *"
     captureStdout: true
     concurrencyPolicy: {policy}
-'''
+"""
 
 
 @pytest.mark.xfail
-@pytest.mark.parametrize("policy,expected_numjobs,expected_max_running", [
-    ('Allow', 2, 2),
-    ('Forbid', 1, 1),
-    ('Replace', 2, 1),
-])
-def test_concurrency_policy(monkeypatch, policy,
-                            expected_numjobs, expected_max_running):
+@pytest.mark.parametrize(
+    "policy,expected_numjobs,expected_max_running",
+    [("Allow", 2, 2), ("Forbid", 1, 1), ("Replace", 2, 1)],
+)
+def test_concurrency_policy(
+    monkeypatch, policy, expected_numjobs, expected_max_running
+):
     monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
-    START_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
-                                   minute=0, second=59, microsecond=750000)
+    START_TIME = datetime.datetime(
+        year=1999,
+        month=12,
+        day=31,
+        hour=12,
+        minute=0,
+        second=59,
+        microsecond=750000,
+    )
 
     t0 = time.perf_counter()
 
     def get_now(utc):
-        return (START_TIME +
-                datetime.timedelta(seconds=(time.perf_counter() - t0)))
+        return START_TIME + datetime.timedelta(
+            seconds=(time.perf_counter() - t0)
+        )
+
     monkeypatch.setattr("yacron.cron.get_now", get_now)
 
     cron = yacron.cron.Cron(
-        None,
-        config_yaml=CONCURRENT_JOB.format(policy=policy),
+        None, config_yaml=CONCURRENT_JOB.format(policy=policy)
     )
 
     events = []
@@ -282,30 +318,32 @@ def test_concurrency_policy(monkeypatch, policy,
                 numjobs += 1
             print(ts, event, jobnum)
             events.append((jobnum, event))
-            if event in {'report_success', 'report_permanent_failure'}:
+            if event in {"report_success", "report_permanent_failure"}:
                 pending_jobs.discard(jobnum)
-            if event in {'report_success', 'report_permanent_failure',
-                         'cancelled'}:
+            if event in {
+                "report_success",
+                "report_permanent_failure",
+                "cancelled",
+            }:
                 running_jobs.discard(jobnum)
             max_running = max(len(running_jobs), max_running)
         cron.signal_shutdown()
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(
-        wait_and_quit(),
-        cron.run()))
+    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
     import pprint
+
     pprint.pprint(events)
     assert (numjobs, max_running) == (expected_numjobs, expected_max_running)
 
 
 def test_simple_config_file(monkeypatch):
     monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
-    config_arg = str(Path(__file__).parent / 'testconfig.yaml')
+    config_arg = str(Path(__file__).parent / "testconfig.yaml")
     yacron.cron.Cron(config_arg)
 
 
-RETRYING_JOB_THAT_FAILS2 = '''
+RETRYING_JOB_THAT_FAILS2 = """
 jobs:
   - name: test
     command: |
@@ -318,25 +356,40 @@ jobs:
         initialDelay: 0.4
         maximumDelay: 1
         backoffMultiplier: 1
-'''
+"""
 
 
 @pytest.mark.xfail
 def test_concurrency_and_backoff(monkeypatch):
     monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
-    START_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
-                                   minute=0, second=59, microsecond=750000)
-    STOP_TIME = datetime.datetime(year=1999, month=12, day=31, hour=12,
-                                  minute=1, second=00, microsecond=250000)
+    START_TIME = datetime.datetime(
+        year=1999,
+        month=12,
+        day=31,
+        hour=12,
+        minute=0,
+        second=59,
+        microsecond=750000,
+    )
+    STOP_TIME = datetime.datetime(
+        year=1999,
+        month=12,
+        day=31,
+        hour=12,
+        minute=1,
+        second=00,
+        microsecond=250000,
+    )
 
     t0 = time.perf_counter()
 
     def get_now(utc):
-        return (START_TIME +
-                datetime.timedelta(seconds=(time.perf_counter() - t0)))
+        return START_TIME + datetime.timedelta(
+            seconds=(time.perf_counter() - t0)
+        )
 
     def get_reltime(ts):
-        return (START_TIME + datetime.timedelta(seconds=(ts - t0)))
+        return START_TIME + datetime.timedelta(seconds=(ts - t0))
 
     monkeypatch.setattr("yacron.cron.get_now", get_now)
 
@@ -353,7 +406,8 @@ def test_concurrency_and_backoff(monkeypatch):
         while get_now(True) < STOP_TIME:
             try:
                 ts, event, job = await asyncio.wait_for(
-                    TracingRunningJob._TRACE.get(), 0.1)
+                    TracingRunningJob._TRACE.get(), 0.1
+                )
             except asyncio.TimeoutError:
                 continue
             try:
@@ -369,17 +423,19 @@ def test_concurrency_and_backoff(monkeypatch):
                 numjobs += 1
             print(get_reltime(ts), event, jobnum)
             events.append((jobnum, event))
-            if event in {'report_success', 'report_permanent_failure'}:
+            if event in {"report_success", "report_permanent_failure"}:
                 pending_jobs.discard(jobnum)
-            if event in {'report_success', 'report_permanent_failure',
-                         'cancelled'}:
+            if event in {
+                "report_success",
+                "report_permanent_failure",
+                "cancelled",
+            }:
                 running_jobs.discard(jobnum)
         cron.signal_shutdown()
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(
-        wait_and_quit(),
-        cron.run()))
+    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
     import pprint
+
     pprint.pprint(events)
     assert numjobs == 2
