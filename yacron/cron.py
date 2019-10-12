@@ -77,7 +77,7 @@ class Cron:
                     "any of the config.:\n%s",
                     str(err),
                 )
-            except Exception as exc:  # pragma: nocover
+            except Exception:  # pragma: nocover
                 logger.exception("please report this as a bug (1)")
             await self.spawn_jobs(startup)
             startup = False

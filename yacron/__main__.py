@@ -27,7 +27,7 @@ def main_loop(loop):
         logger.error("Configuration error: %s", str(err))
         sys.exit(1)
 
-    if args.validate_config == True:
+    if args.validate_config is True:
         logger.info("Configuration is valid.")
         sys.exit(0)
 
