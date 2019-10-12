@@ -13,8 +13,7 @@ requirements = [
     "strictyaml>=0.7.2",
     "crontab",
     "aiohttp",
-    "raven",
-    "raven-aiohttp",
+    "sentry-sdk",
     "aiosmtplib",
     "jinja2",
 ]

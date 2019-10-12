@@ -3,7 +3,7 @@ import yacron.config
 import asyncio
 import pytest
 import aiosmtplib
-import raven
+import sentry_sdk
 from unittest.mock import Mock, patch
 
 
@@ -245,35 +245,57 @@ def test_report_sentry(success, dsn_from, body, extra, expected_dsn,
                })
     loop = asyncio.get_event_loop()
 
-    messages_sent = []
+    transports = []
 
-    def captureMessage(self, body, extra, *, fingerprint, level):
-        messages_sent.append((body, extra, fingerprint, level))
+    class FakeSentryTransport:
 
-    real_init = raven.Client.__init__
-    init_args = (), {}
+        def __init__(self, *args, **kwargs):
+            self.args = args
+            self.kwargs = kwargs
+            self.messages_sent = []
 
-    def init(self, *args, **kwargs):
-        nonlocal init_args
-        init_args = args, kwargs
-        real_init(self, *args, **kwargs)
+        def capture_event(self, event_opt):
+            self.messages_sent.append(event_opt)
+
+        def kill(self):
+            pass
+
+        def flush(self, *args, **kwargs):
+            pass
+
+
+    def make_transport(*args, **kwargs):
+        transport = FakeSentryTransport(*args, **kwargs)
+        transports.append(transport)
+        return transport
+
+    monkeypatch.setattr("sentry_sdk.client.make_transport",
+                        make_transport)
 
     sentry = yacron.job.SentryReporter()
-    with patch("raven.Client.__init__", init), \
-            patch("raven.Client.captureMessage", captureMessage):
-        loop.run_until_complete(sentry.report(success,
-                                              job,
-                                              job_config.onSuccess['report']))
+    loop.run_until_complete(sentry.report(success,
+                                          job,
+                                          job_config.onSuccess['report']))
+    for transport in transports:
+        assert transport.args[0].get('dsn') == expected_dsn
 
-    args, kwargs = init_args
-    assert kwargs.get('dsn') == expected_dsn
+    messages_sent = [
+        msg
+        for transport in transports
+        for msg in transport.messages_sent
+    ]
+
 
     assert len(messages_sent) == 1
-    got_body, got_extra, got_fingerprint, got_level = messages_sent[0]
-    assert got_body == body
-    assert got_extra == extra
-    assert got_fingerprint == fingerprint
-    assert got_level == level_out
+    msg = messages_sent[0]
+    msg1 = {
+        key: msg[key]
+        for key in {"message", "level", "fingerprint", "extra"}
+    }
+    msg1["extra"].pop("sys.argv", "")
+
+    assert msg1 == {"message": body, "level": level_out,
+        "fingerprint": fingerprint, "extra": extra}
 
 
 @pytest.mark.parametrize("shell, command, expected_type, expected_args", [

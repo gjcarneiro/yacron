@@ -8,8 +8,7 @@ from email.mime.text import MIMEText
 from socket import gethostname
 from typing import Any, Awaitable, Dict, List, Optional, Union, Tuple  # noqa
 
-from raven import Client
-from raven_aiohttp import AioHttpTransport
+import sentry_sdk
 
 import aiosmtplib
 import jinja2
@@ -105,6 +104,7 @@ class SentryReporter(Reporter):
         for line in config['fingerprint']:
             fingerprint.append(jinja2.Template(line).render(job.template_vars))
 
+        sentry_sdk.init(dsn=dsn)
         extra = {
             'job': job.config.name,
             'exit_code': job.retcode,
@@ -115,15 +115,14 @@ class SentryReporter(Reporter):
         extra.update(config.get('extra', {}))
         logger.debug("sentry: body=%r; fingerprint=%r; extra=%r",
                      body, fingerprint, extra)
-        client = Client(transport=AioHttpTransport,
-                        dsn=dsn,
-                        string_max_length=4096)
-        client.captureMessage(
-            body,
-            extra=extra,
-            fingerprint=fingerprint,
-            level=config.get("level", "error"),
-        )
+        with sentry_sdk.configure_scope() as scope:
+            for key, val in extra.items():
+                scope.set_extra(key, val)
+            scope.fingerprint = fingerprint
+            sentry_sdk.capture_message(
+                body,
+                level=config.get("level", "error"),
+            )
 
 
 class MailReporter(Reporter):
