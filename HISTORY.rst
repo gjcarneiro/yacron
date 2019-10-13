@@ -2,9 +2,10 @@
 History
 =======
 
-0.10.0
-------------------
+0.10.0b1 (2019-10-13)
+---------------------
 * Build a standalone Linux binary, using PyOxidizer
+* Switch from raven to sentry-sdk
 
 0.9.0 (2019-04-03)
 ------------------
