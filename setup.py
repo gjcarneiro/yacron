@@ -32,7 +32,6 @@ with open("HISTORY.rst") as history_file:
 
 setup(
     name="yacron",
-    version="0.1.0",
     description="A modern Cron replacement that is Docker-friendly",
     long_description=(readme + "\n\n" + history),
     author="Gustavo Carneiro",

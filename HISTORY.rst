@@ -2,6 +2,10 @@
 History
 =======
 
+0.10.0
+------------------
+* Build a standalone Linux binary, using PyOxidizer
+
 0.9.0 (2019-04-03)
 ------------------
 * Added an option to just check if the yaml file is valid without running the scheduler.

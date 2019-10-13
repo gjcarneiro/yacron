@@ -63,3 +63,5 @@ target/
 .python-version
 
 /.mypy_cache/
+
+/pyoxidizer/venv/

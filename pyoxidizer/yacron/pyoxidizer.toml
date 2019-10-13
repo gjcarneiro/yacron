@@ -1,0 +1,101 @@
+# This file controls the PyOxidizer build configuration. See the
+# pyoxidizer crate's documentation for extensive documentation
+# on this file format.
+
+[[build]]
+application_name = "yacron"
+
+[[embedded_python_config]]
+raw_allocator = "jemalloc"
+
+# dont_write_bytecode = true
+# ignore_environment = true
+no_site = true
+no_user_site_directory = true
+# optimize_level = 0
+# stdio_encoding = "utf-8:strict"
+# unbuffered_stdio = false
+#write_modules_directory_env = "PYOXIDIZER_WRITE_MODULES_DIR"
+
+# Windows doesn't support jemalloc.
+[[embedded_python_config]]
+build_target = "i686-pc-windows-msvc"
+raw_allocator = "system"
+
+[[embedded_python_config]]
+build_target = "x86_64-pc-windows-msvc"
+raw_allocator = "system"
+
+[[packaging_rule]]
+type = "stdlib-extensions-policy"
+
+# Package all available extension modules from the Python distribution.
+# The Python interpreter will be fully featured.
+policy = "all"
+
+# Only package the minimal set of extension modules needed to initialize
+# a Python interpreter. Many common packages in Python's standard
+# library won't work with this setting.
+# policy = "minimal"
+
+# Only package extension modules that don't require linking against
+# non-Python libraries. e.g. will exclude support for OpenSSL, SQLite3,
+# other features that require external libraries.
+# policy = "no-libraries"
+
+# Explicit list of extension modules from the distribution to include.
+# [[packaging_rule]]
+# type = "stdlib-extensions-explicit-includes"
+# includes = ["binascii", "errno", "itertools", "math", "select", "_socket"]
+
+# Explicit list of extension modules from the distribution to exclude.
+# [[packaging_rule]
+# type = "stdlib-extensions-explicit-excludes"
+# excludes = ["_ssl"]
+
+# Package the entire Python standard library without sources.
+[[packaging_rule]]
+type = "stdlib"
+include_source = false
+
+[[packaging_rule]]
+type = "virtualenv"
+path = "../venv"
+
+[[embedded_python_run]]
+mode = "eval"
+code = "from yacron.__main__ import main; main()"
+
+[[distribution]]
+type = "wix"
+
+# END OF COMMON USER-ADJUSTED SETTINGS.
+#
+# Everything below this is typically managed by PyOxidizer and doesn't need
+# to be updated by people.
+
+[[python_distribution]]
+build_target = "i686-pc-windows-msvc"
+url = "https://github.com/indygreg/python-build-standalone/releases/download/20190816/cpython-3.7.4-windows-x86-20190817T0235.tar.zst"
+sha256 = "46c77de57c5ebbcc8c25e1003a77ca827763da01455b097f4e5fc0b782526c9b"
+[[python_distribution]]
+build_target = "x86_64-apple-darwin"
+url = "https://github.com/indygreg/python-build-standalone/releases/download/20190816/cpython-3.7.4-macos-20190817T0220.tar.zst"
+sha256 = "4a77d5ca898196bbc977eb126d129340bab14fb6a8feaaa335675613852071de"
+[[python_distribution]]
+build_target = "x86_64-pc-windows-msvc"
+url = "https://github.com/indygreg/python-build-standalone/releases/download/20190816/cpython-3.7.4-windows-amd64-20190817T0227.tar.zst"
+sha256 = "82ae15f31178c9854bacb5d59e00305c6f6080649c9960a29be6b92517b8e5e5"
+[[python_distribution]]
+build_target = "x86_64-unknown-linux-gnu"
+url = "https://github.com/indygreg/python-build-standalone/releases/download/20190816/cpython-3.7.4-linux64-20190817T0224.tar.zst"
+sha256 = "1d3b5dc07ee2ddbb5e07bb3f737f368ea0ada088801e1e47d1f12f29cea6a851"
+[[python_distribution]]
+build_target = "x86_64-unknown-linux-musl"
+url = "https://github.com/indygreg/python-build-standalone/releases/download/20190816/cpython-3.7.4-linux64-musl-20190817T0227.tar.zst"
+sha256 = "1b20b339fa38aa93b47f754c612fd544a4b82949b51a20b0523430b3abf1d156"
+
+
+[[pyoxidizer]]
+version = "0.3.0"
+commit = ""
