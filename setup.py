@@ -56,7 +56,9 @@ setup(
     ],
     setup_requires=setup_requirements,
     tests_require=test_requirements,
-    use_scm_version=True,
+    use_scm_version={
+        "write_to": "yacron/version.py",
+    },
     entry_points={"console_scripts": ["yacron = yacron.__main__:main"]},
     python_requires=">=3.5",
 )

@@ -6,6 +6,7 @@ import signal
 import sys
 
 from yacron.cron import Cron, ConfigError
+import yacron.version
 
 
 def main_loop(loop):
@@ -15,11 +16,16 @@ def main_loop(loop):
     )
     parser.add_argument("-l", "--log-level", default="INFO")
     parser.add_argument("-v", "--validate-config", default=False)
+    parser.add_argument("--version", default=False, action="store_true")
     args = parser.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log_level))
     # logging.getLogger("asyncio").setLevel(logging.WARNING)
     logger = logging.getLogger("yacron")
+
+    if args.version:
+        print(yacron.version.version)
+        sys.exit(0)
 
     try:
         cron = Cron(args.config)
