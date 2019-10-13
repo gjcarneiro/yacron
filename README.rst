@@ -45,6 +45,25 @@ yacron requires Python >= 3.5.  It is advisable to install it in a Python virtua
     . yacronenv/bin/activate
     pip install yacron
 
+Alternatively, since version 0.10.0b1, an experimental self-contained binary
+can be downloaded from github: https://github.com/gjcarneiro/yacron/releases.
+For example:
+
+.. code-block:: shell
+
+    $ wget https://github.com/gjcarneiro/yacron/releases/download/0.10.0b1/yacron.xz
+    Saving to: ‘yacron.xz’
+
+    yacron.xz                                           100%[=================================================================================================================>]  14.07M  6.81MB/s    in 2.1s
+
+    2019-10-13 14:12:22 (6.81 MB/s) - ‘yacron.xz’ saved [14751572/14751572]
+
+    $ unxz yacron.xz
+    $ chmod a+x yacron
+    $ ./yacron --version
+    0.10.0b1
+
+
 Usage
 -----
 
