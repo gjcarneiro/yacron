@@ -60,7 +60,7 @@ include_source = false
 
 [[packaging_rule]]
 type = "virtualenv"
-path = "../venv"
+path = "/yacron"
 
 [[embedded_python_run]]
 mode = "eval"

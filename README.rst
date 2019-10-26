@@ -47,21 +47,18 @@ yacron requires Python >= 3.5.  It is advisable to install it in a Python virtua
 
 Alternatively, since version 0.10.0b1, an experimental self-contained binary
 can be downloaded from github: https://github.com/gjcarneiro/yacron/releases.
+This binary should work on any Linux system post glibc 2.23 (e.g. Ubuntu:16.04).
 For example:
 
 .. code-block:: shell
 
-    $ wget https://github.com/gjcarneiro/yacron/releases/download/0.10.0b1/yacron.xz
-    Saving to: ‘yacron.xz’
+    $ wget https://github.com/gjcarneiro/yacron/releases/download/0.10.0b2/yacron-0.10.0b2-x86_64-unknown-linux-gnu.xz
+    Saving to: yacron-0.10.0b2-x86_64-unknown-linux-gnu.xz’
 
-    yacron.xz                                           100%[=================================================================================================================>]  14.07M  6.81MB/s    in 2.1s
-
-    2019-10-13 14:12:22 (6.81 MB/s) - ‘yacron.xz’ saved [14751572/14751572]
-
-    $ unxz yacron.xz
-    $ chmod a+x yacron
-    $ ./yacron --version
-    0.10.0b1
+    $ unxz yacron-0.10.0b2-x86_64-unknown-linux-gnu.xz
+    $ chmod a+x yacron-0.10.0b2-x86_64-unknown-linux-gnu
+    $ ./yacron-0.10.0b2-x86_64-unknown-linux-gnu --version
+    0.10.0b2
 
 
 Usage
