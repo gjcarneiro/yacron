@@ -2,6 +2,12 @@
 History
 =======
 
+0.10.0b2 (2019-10-26)
+---------------------
+
+* Build Linux binary inside Docker Ubuntu 16.04, so that it is compatible with
+  older glibc systems
+
 0.10.0b1 (2019-10-13)
 ---------------------
 * Build a standalone Linux binary, using PyOxidizer
