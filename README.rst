@@ -25,7 +25,9 @@ Features
   * Runs in the foreground;
   * Logs everything to stdout/stderr [1]_;
 
-* Option to automatically retry failing cron jobs, with exponential backoff.
+* Option to automatically retry failing cron jobs, with exponential backoff;
+* Optional HTTP REST API, to fetch status and start jobs on demand.
+
 
 .. [1] Whereas vixie cron only logs to syslog, requiring a syslog daemon to be running in the background or else you don't get logs!
 
@@ -465,3 +467,94 @@ will send it a SIGKILL after half a second:
     captureStderr: true
     executionTimeout: 1
     killTimeout: 0.5
+
+Remove web/HTTP interface
++++++++++++++++++++++++++
+
+(new in version 0.10)
+
+If you wish to remotely control yacron, you can optionally enable an HTTP REST
+interface, with the following configuration (example):
+
+.. code-block:: yaml
+
+  web:
+    listen:
+       - http://127.0.0.1:8080
+       - unix:///tmp/yacron.sock
+
+Now you have the following options to control it (using HTTPie as example):
+
+Get the version of yacron:
+##########################
+
+.. code-block:: shell
+
+  $ http get http://127.0.0.1:8080/version
+  HTTP/1.1 200 OK
+  Content-Length: 22
+  Content-Type: text/plain; charset=utf-8
+  Date: Sun, 03 Nov 2019 19:48:15 GMT
+  Server: Python/3.7 aiohttp/3.6.2
+
+  0.10.0b3.dev7+g45bc4ce
+
+Get the status of cron jobs:
+############################
+
+.. code-block:: shell
+
+  $ http get http://127.0.0.1:8080/status
+  HTTP/1.1 200 OK
+  Content-Length: 104
+  Content-Type: text/plain; charset=utf-8
+  Date: Sun, 03 Nov 2019 19:44:45 GMT
+  Server: Python/3.7 aiohttp/3.6.2
+
+  test-01: scheduled (in 14 seconds)
+  test-02: scheduled (in 74 seconds)
+  test-03: scheduled (in 14 seconds)
+
+You may also get status info in json format:
+
+.. code-block:: shell
+
+  $ http get http://127.0.0.1:8080/status Accept:application/json
+  HTTP/1.1 200 OK
+  Content-Length: 206
+  Content-Type: application/json; charset=utf-8
+  Date: Sun, 03 Nov 2019 19:45:53 GMT
+  Server: Python/3.7 aiohttp/3.6.2
+
+  [
+      {
+          "job": "test-01",
+          "scheduled_in": 6.16588,
+          "status": "scheduled"
+      },
+      {
+          "job": "test-02",
+          "scheduled_in": 6.165787,
+          "status": "scheduled"
+      },
+      {
+          "job": "test-03",
+          "scheduled_in": 6.165757,
+          "status": "scheduled"
+      }
+  ]
+
+Start a job right now:
+######################
+
+Sometimes it's useful to start a cron job right now, even if it's not
+scheduled to run yet, for example for testing:
+
+.. code-block:: shell
+
+  07:48:15 {master} ~/projects/yacron$ http post http://127.0.0.1:8080/jobs/test-02/start
+  HTTP/1.1 200 OK
+  Content-Length: 0
+  Content-Type: application/octet-stream
+  Date: Sun, 03 Nov 2019 19:50:20 GMT
+  Server: Python/3.7 aiohttp/3.6.2

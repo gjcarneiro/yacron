@@ -2,6 +2,12 @@
 History
 =======
 
+0.10.0b3 (2019-??)
+---------------------
+
+* HTTP remote interface, allowing to get job status and start jobs on demand
+
+
 0.10.0b2 (2019-10-26)
 ---------------------
 
