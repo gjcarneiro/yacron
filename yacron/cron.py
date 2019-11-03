@@ -348,6 +348,8 @@ class Cron:
                         await self.handle_job_failure(job)
                     else:
                         await self.handle_job_success(job)
+            except asyncio.CancelledError:
+                raise
             except Exception:  # pragma: no cover
                 logger.exception("please report this as a bug (3)")
                 await asyncio.sleep(1)
