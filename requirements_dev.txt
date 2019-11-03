@@ -4,6 +4,6 @@ coverage==4.1
 pluggy==0.6.0
 pytest==3.5.0
 pytest-cov==2.5.1
-mypy==0.730
+mypy==0.740
 
 

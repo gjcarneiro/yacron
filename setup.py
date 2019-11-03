@@ -16,6 +16,7 @@ requirements = [
     "sentry-sdk",
     "aiosmtplib",
     "jinja2",
+    "humanize",
 ]
 
 

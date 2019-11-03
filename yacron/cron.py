@@ -6,6 +6,7 @@ from collections import OrderedDict, defaultdict
 from typing import Any, Awaitable, Dict, List, Optional, Union  # noqa
 from urllib.parse import urlparse
 from aiohttp import web
+from humanize import naturaltime
 import yacron.version
 from yacron.config import (
     JobConfig,
@@ -44,6 +45,8 @@ def create_task(coro: Awaitable) -> asyncio.Task:
 def web_site_from_url(runner: web.AppRunner, url: str) -> web.BaseSite:
     parsed = urlparse(url)
     if parsed.scheme == "http":
+        assert parsed.hostname is not None
+        assert parsed.port is not None
         return web.TCPSite(runner, parsed.hostname, parsed.port)
     elif parsed.scheme == "unix":
         return web.UnixSite(runner, parsed.path)
@@ -135,6 +138,51 @@ class Cron:
     async def _web_get_version(self, request: web.Request) -> web.Response:
         return web.Response(text=yacron.version.version)
 
+    async def _web_get_status(self, request: web.Request) -> web.Response:
+        out = []
+        for name, job in self.cron_jobs.items():
+            running = self.running_jobs.get(name, None)
+            if running:
+                out.append(
+                    {
+                        "job": name,
+                        "status": "running",
+                        "pid": [
+                            runjob.proc.pid
+                            for runjob in running
+                            if runjob.proc is not None
+                        ],
+                    }
+                )
+            else:
+                crontab = job.schedule  # type: CronTab
+                out.append(
+                    {
+                        "job": name,
+                        "status": "scheduled",
+                        "scheduled_in": crontab.next(default_utc=job.utc),
+                    }
+                )
+        if request.headers["Accept"] == "application/json":
+            return web.json_response(out)
+        else:
+            lines = []
+            for jobstat in out:  # type: Dict[str, Any]
+                if jobstat["status"] == "running":
+                    status = "running (pid: {pid})".format(
+                        pid=", ".join(str(pid) for pid in jobstat["pid"])
+                    )
+                else:
+                    status = "scheduled ({})".format(
+                        naturaltime(jobstat["scheduled_in"], future=True)
+                    )
+                lines.append(
+                    "{name}: {status}".format(
+                        name=jobstat["job"], status=status
+                    )
+                )
+            return web.Response(text="\n".join(lines))
+
     async def start_stop_web_app(self, web_config: Optional[WebConfig]):
         if self.web_runner is not None and (
             web_config is None or web_config != self.web_config
@@ -150,7 +198,12 @@ class Cron:
             and self.web_runner is None
         ):
             app = web.Application()
-            app.add_routes([web.get("/version", self._web_get_version)])
+            app.add_routes(
+                [
+                    web.get("/version", self._web_get_version),
+                    web.get("/status", self._web_get_status),
+                ]
+            )
             self.web_runner = web.AppRunner(app)
             await self.web_runner.setup()
             for addr in web_config["listen"]:
