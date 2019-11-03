@@ -468,7 +468,7 @@ will send it a SIGKILL after half a second:
     executionTimeout: 1
     killTimeout: 0.5
 
-Remove web/HTTP interface
+Remote web/HTTP interface
 +++++++++++++++++++++++++
 
 (new in version 0.10)
