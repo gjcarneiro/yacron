@@ -2,11 +2,11 @@
 History
 =======
 
-0.10.0b3 (2019-??)
----------------------
+0.10.0 (2019-11-03)
+-------------------
 
 * HTTP remote interface, allowing to get job status and start jobs on demand
-
+* Simple Linux binary including all dependencies (built using PyOxidizer)
 
 0.10.0b2 (2019-10-26)
 ---------------------
