@@ -552,7 +552,7 @@ scheduled to run yet, for example for testing:
 
 .. code-block:: shell
 
-  07:48:15 {master} ~/projects/yacron$ http post http://127.0.0.1:8080/jobs/test-02/start
+  $ http post http://127.0.0.1:8080/jobs/test-02/start
   HTTP/1.1 200 OK
   Content-Length: 0
   Content-Type: application/octet-stream
