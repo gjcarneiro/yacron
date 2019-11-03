@@ -186,6 +186,7 @@ CONFIG_SCHEMA = EmptyDict() | Map(
     {
         Opt("defaults"): Map(_job_defaults_common),
         Opt("jobs"): Seq(Map(_job_schema_dict)),
+        Opt("web"): Map({"listen": Seq(Str())}),
     }
 )
 
@@ -249,7 +250,14 @@ class JobConfig:
         self.statsd = config.pop("statsd")
 
 
-def parse_config_file(path: str) -> List[JobConfig]:
+from typing import Any, Dict, NewType, Optional, Tuple, cast
+
+WebConfig = NewType("WebConfig", Dict[str, Any])
+
+
+def parse_config_file(
+    path: str,
+) -> Tuple[List[JobConfig], Optional[WebConfig]]:
     with open(path, "rt", encoding="utf-8") as stream:
         data = stream.read()
     return parse_config_string(data, path)
@@ -257,7 +265,7 @@ def parse_config_file(path: str) -> List[JobConfig]:
 
 def parse_config_string(
     data: str, path: Optional[str] = None
-) -> List[JobConfig]:
+) -> Tuple[List[JobConfig], Optional[WebConfig]]:
     try:
         doc = strictyaml.load(data, CONFIG_SCHEMA, label=path).data
     except YAMLError as ex:
@@ -269,31 +277,47 @@ def parse_config_string(
         job_dict = dict(mergedicts(DEFAULT_CONFIG, defaults))
         job_dict = dict(mergedicts(job_dict, config_job))
         jobs.append(JobConfig(job_dict))
-    return jobs
+    webconf = WebConfig(doc["web"]) if "web" in doc else None
+    return jobs, webconf
 
 
-def parse_config(config_arg: str) -> List[JobConfig]:
+def parse_config(
+    config_arg: str,
+) -> Tuple[List[JobConfig], Optional[WebConfig]]:
     jobs = []
     config_errors = {}
+    web_config = None
+    web_config_source_fname = None
     if os.path.isdir(config_arg):
         for direntry in os.scandir(config_arg):
             _, ext = os.path.splitext(direntry.name)
             if ext in {".yml", ".yaml"}:
                 try:
-                    config = parse_config_file(direntry.path)
+                    config, webconf = parse_config_file(direntry.path)
                 except ConfigError as err:
                     config_errors[direntry.path] = str(err)
                 except OSError as ex:
                     config_errors[config_arg] = str(ex)
                 else:
                     jobs.extend(config)
+                    if webconf is not None:
+                        if web_config is None:
+                            web_config = webconf
+                            web_config_source_fname = direntry.path
+                        else:
+                            raise ConfigError(
+                                "Multiple 'web' configurations found: "
+                                "first in {}, now in {}".format(
+                                    web_config_source_fname, direntry.path
+                                )
+                            )
     else:
         try:
-            config = parse_config_file(config_arg)
+            config, web_config = parse_config_file(config_arg)
         except OSError as ex:
             config_errors[config_arg] = str(ex)
         else:
             jobs.extend(config)
     if config_errors:
         raise ConfigError("\n---".join(config_errors.values()))
-    return jobs
+    return jobs, web_config

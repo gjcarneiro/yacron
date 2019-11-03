@@ -4,12 +4,16 @@ import datetime
 import logging
 from collections import OrderedDict, defaultdict
 from typing import Any, Awaitable, Dict, List, Optional, Union  # noqa
-
+from urllib.parse import urlparse
+from aiohttp import web
+from humanize import naturaltime
+import yacron.version
 from yacron.config import (
     JobConfig,
     parse_config,
     ConfigError,
     parse_config_string,
+    WebConfig,
 )
 from yacron.job import RunningJob, JobRetryState
 from crontab import CronTab  # noqa
@@ -38,6 +42,23 @@ def create_task(coro: Awaitable) -> asyncio.Task:
     return asyncio.get_event_loop().create_task(coro)
 
 
+def web_site_from_url(runner: web.AppRunner, url: str) -> web.BaseSite:
+    parsed = urlparse(url)
+    if parsed.scheme == "http":
+        assert parsed.hostname is not None
+        assert parsed.port is not None
+        return web.TCPSite(runner, parsed.hostname, parsed.port)
+    elif parsed.scheme == "unix":
+        return web.UnixSite(runner, parsed.path)
+    else:
+        logger.warning(
+            "Ignoring web listen url %s: scheme %r not supported",
+            url,
+            parsed.scheme,
+        )
+        raise ValueError(url)
+
+
 class Cron:
     def __init__(
         self, config_arg: Optional[str], *, config_yaml: Optional[str] = None
@@ -54,13 +75,15 @@ class Cron:
             self.update_config()
         if config_yaml is not None:
             # config_yaml is for unit testing
-            config = parse_config_string(config_yaml)
+            config, _ = parse_config_string(config_yaml)
             self.cron_jobs = OrderedDict((job.name, job) for job in config)
 
         self._wait_for_running_jobs_task = None  # type: Optional[asyncio.Task]
         self._stop_event = asyncio.Event()
         self._jobs_running = asyncio.Event()
         self.retry_state = {}  # type: Dict[str, JobRetryState]
+        self.web_runner = None  # type: Optional[web.AppRunner]
+        self.web_config = None  # type: Optional[WebConfig]
 
     async def run(self) -> None:
         self._wait_for_running_jobs_task = create_task(
@@ -70,7 +93,8 @@ class Cron:
         startup = True
         while not self._stop_event.is_set():
             try:
-                self.update_config()
+                web_config = self.update_config()
+                await self.start_stop_web_app(web_config)
             except ConfigError as err:
                 logger.error(
                     "Error in configuration file(s), so not updating "
@@ -96,15 +120,100 @@ class Cron:
             await asyncio.gather(*cancel_all)
         await self._wait_for_running_jobs_task
 
+        if self.web_runner is not None:
+            logger.info("Stopping http server")
+            await self.web_runner.cleanup()
+
     def signal_shutdown(self) -> None:
         logger.debug("Signalling shutdown")
         self._stop_event.set()
 
-    def update_config(self) -> None:
+    def update_config(self) -> Optional[WebConfig]:
         if self.config_arg is None:
-            return
-        config = parse_config(self.config_arg)
+            return None
+        config, web_config = parse_config(self.config_arg)
         self.cron_jobs = OrderedDict((job.name, job) for job in config)
+        return web_config
+
+    async def _web_get_version(self, request: web.Request) -> web.Response:
+        return web.Response(text=yacron.version.version)
+
+    async def _web_get_status(self, request: web.Request) -> web.Response:
+        out = []
+        for name, job in self.cron_jobs.items():
+            running = self.running_jobs.get(name, None)
+            if running:
+                out.append(
+                    {
+                        "job": name,
+                        "status": "running",
+                        "pid": [
+                            runjob.proc.pid
+                            for runjob in running
+                            if runjob.proc is not None
+                        ],
+                    }
+                )
+            else:
+                crontab = job.schedule  # type: CronTab
+                out.append(
+                    {
+                        "job": name,
+                        "status": "scheduled",
+                        "scheduled_in": crontab.next(default_utc=job.utc),
+                    }
+                )
+        if request.headers["Accept"] == "application/json":
+            return web.json_response(out)
+        else:
+            lines = []
+            for jobstat in out:  # type: Dict[str, Any]
+                if jobstat["status"] == "running":
+                    status = "running (pid: {pid})".format(
+                        pid=", ".join(str(pid) for pid in jobstat["pid"])
+                    )
+                else:
+                    status = "scheduled ({})".format(
+                        naturaltime(jobstat["scheduled_in"], future=True)
+                    )
+                lines.append(
+                    "{name}: {status}".format(
+                        name=jobstat["job"], status=status
+                    )
+                )
+            return web.Response(text="\n".join(lines))
+
+    async def start_stop_web_app(self, web_config: Optional[WebConfig]):
+        if self.web_runner is not None and (
+            web_config is None or web_config != self.web_config
+        ):
+            # assert self.web_runner is not None
+            logger.info("Stopping http server")
+            await self.web_runner.cleanup()
+            self.web_runner = None
+
+        if (
+            web_config is not None
+            and web_config["listen"]
+            and self.web_runner is None
+        ):
+            app = web.Application()
+            app.add_routes(
+                [
+                    web.get("/version", self._web_get_version),
+                    web.get("/status", self._web_get_status),
+                ]
+            )
+            self.web_runner = web.AppRunner(app)
+            await self.web_runner.setup()
+            for addr in web_config["listen"]:
+                site = web_site_from_url(self.web_runner, addr)
+                logger.info("web: started listening on %s", addr)
+                try:
+                    await site.start()
+                except ValueError:
+                    pass
+            self.web_config = web_config
 
     async def spawn_jobs(self, startup) -> None:
         for job in self.cron_jobs.values():
