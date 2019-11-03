@@ -439,3 +439,18 @@ def test_concurrency_and_backoff(monkeypatch):
 
     pprint.pprint(events)
     assert numjobs == 2
+
+
+@pytest.mark.parametrize(
+    "value_in, out",
+    [
+        (10, "in 10 seconds"),
+        (305.0, "in 5 minutes"),
+        (5000.0, "in 83 minutes"),
+        (50000.0, "in 13 hours"),
+        (500000.0, "in 5 days"),
+    ],
+)
+def test_naturaltime(value_in, out):
+    got_out = yacron.cron.naturaltime(value_in, future=True)
+    assert got_out == out

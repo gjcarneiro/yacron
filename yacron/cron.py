@@ -6,7 +6,6 @@ from collections import OrderedDict, defaultdict
 from typing import Any, Awaitable, Dict, List, Optional, Union  # noqa
 from urllib.parse import urlparse
 from aiohttp import web
-from humanize import naturaltime
 import yacron.version
 from yacron.config import (
     JobConfig,
@@ -20,6 +19,24 @@ from crontab import CronTab  # noqa
 
 logger = logging.getLogger("yacron")
 WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
+
+
+def naturaltime(seconds: float, future=False) -> str:
+    assert future
+    if seconds < 120:
+        return "in {} second{}".format(
+            int(seconds), "s" if seconds >= 2 else ""
+        )
+    minutes = seconds / 60
+    if minutes < 120:
+        return "in {} minute{}".format(
+            int(minutes), "s" if minutes >= 2 else ""
+        )
+    hours = minutes / 60
+    if hours < 48:
+        return "in {} hour{}".format(int(hours), "s" if hours >= 2 else "")
+    days = hours / 24
+    return "in {} day{}".format(int(days), "s" if days >= 2 else "")
 
 
 def get_now(utc: bool) -> datetime.datetime:
