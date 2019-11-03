@@ -200,6 +200,15 @@ class Cron:
                 )
             return web.Response(text="\n".join(lines))
 
+    async def _web_start_job(self, request: web.Request) -> web.Response:
+        name = request.match_info["name"]
+        try:
+            job = self.cron_jobs[name]
+        except KeyError:
+            raise web.HTTPNotFound()
+        await self.maybe_launch_job(job)
+        return web.Response()
+
     async def start_stop_web_app(self, web_config: Optional[WebConfig]):
         if self.web_runner is not None and (
             web_config is None or web_config != self.web_config
@@ -219,6 +228,7 @@ class Cron:
                 [
                     web.get("/version", self._web_get_version),
                     web.get("/status", self._web_get_status),
+                    web.post("/jobs/{name}/start", self._web_start_job),
                 ]
             )
             self.web_runner = web.AppRunner(app)
