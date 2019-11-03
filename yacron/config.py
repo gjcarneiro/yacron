@@ -1,7 +1,7 @@
 import logging
 import os.path
 from typing import Union  # noqa
-from typing import List, Optional
+from typing import List, Optional, Any, Dict, NewType, Tuple
 
 import strictyaml
 from strictyaml import Optional as Opt, EmptyDict
@@ -21,6 +21,7 @@ from ruamel.yaml.error import YAMLError
 from crontab import CronTab
 
 logger = logging.getLogger("yacron.config")
+WebConfig = NewType("WebConfig", Dict[str, Any])
 
 
 class ConfigError(Exception):
@@ -248,11 +249,6 @@ class JobConfig:
         self.executionTimeout = config.pop("executionTimeout")
         self.killTimeout = config.pop("killTimeout")
         self.statsd = config.pop("statsd")
-
-
-from typing import Any, Dict, NewType, Optional, Tuple, cast
-
-WebConfig = NewType("WebConfig", Dict[str, Any])
 
 
 def parse_config_file(
