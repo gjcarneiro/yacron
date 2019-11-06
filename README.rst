@@ -39,7 +39,7 @@ finding and fixing bugs before the first stable release.
 
 Installation
 ------------
-yacron requires Python >= 3.5.  It is advisable to install it in a Python virtual environment, for example:
+yacron requires Python >= 3.5.3.  It is advisable to install it in a Python virtual environment, for example:
 
 .. code-block:: shell
 
