@@ -172,12 +172,16 @@ class Cron:
                     }
                 )
             else:
-                crontab = job.schedule  # type: CronTab
+                crontab = job.schedule  # type: Union[CronTab, str]
                 out.append(
                     {
                         "job": name,
                         "status": "scheduled",
-                        "scheduled_in": crontab.next(default_utc=job.utc),
+                        "scheduled_in": (
+                            crontab.next(default_utc=job.utc)
+                            if isinstance(crontab, CronTab)
+                            else str(crontab)
+                        ),
                     }
                 )
         if request.headers["Accept"] == "application/json":
@@ -191,7 +195,13 @@ class Cron:
                     )
                 else:
                     status = "scheduled ({})".format(
-                        naturaltime(jobstat["scheduled_in"], future=True)
+                        (
+                            jobstat["scheduled_in"]
+                            if type(jobstat["scheduled_in"]) is str
+                            else naturaltime(
+                                jobstat["scheduled_in"], future=True
+                            )
+                        )
                     )
                 lines.append(
                     "{name}: {status}".format(

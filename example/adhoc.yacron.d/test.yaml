@@ -52,7 +52,7 @@ jobs:
     command:
       - echo
       - "foobar"
-    schedule: "* * * * *"
+    schedule: "@reboot"
     captureStdout: true
     failsWhen:
       producesStdout: true
