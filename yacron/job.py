@@ -369,6 +369,7 @@ class RunningJob:
                     "Problem reporting job %s failure: %s",
                     self.config.name,
                     result,
+                    exc_info=result,
                 )
 
     @property
