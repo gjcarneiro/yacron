@@ -11,7 +11,7 @@ with open("README.rst") as readme_file:
 
 requirements = [
     "strictyaml>=0.7.2",
-    "crontab",
+    "crontab==0.22.6",
     "aiohttp>=3.0",
     "sentry-sdk",
     "aiosmtplib",
