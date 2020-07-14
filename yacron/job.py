@@ -121,11 +121,12 @@ class SentryReporter(Reporter):
         }
         extra.update(config.get("extra", {}))
         logger.debug(
-            "sentry: body=%r; fingerprint=%r; extra=%r",
-            body,
+            "sentry: fingerprint=%r; extra=%r",
             fingerprint,
             extra,
         )
+        if logger.isEnabledFor(logging.DEBUG):
+            print("sentry: body:\n" + body, file=sys.stderr)
         with sentry_sdk.configure_scope() as scope:
             for key, val in extra.items():
                 scope.set_extra(key, val)
