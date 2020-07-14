@@ -225,7 +225,7 @@ class RunningJob:
             raise RuntimeError("process already running")
         kwargs = {}  # type: Dict[str, Any]
         if isinstance(self.config.command, list):
-            create: Any = asyncio.create_subprocess_exec
+            create = asyncio.create_subprocess_exec  # type: Any
             cmd = self.config.command
         else:
             if self.config.shell:
