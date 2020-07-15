@@ -20,7 +20,7 @@ defaults:
     report:
       sentry:
         dsn:
-          value: http://xxx:yyy@sentry/40
+          value:
         extra:
           foo: bar
           zbr: 123
@@ -48,27 +48,62 @@ defaults:
     prefix: my.cron.jobs.prefix.test01
 
 jobs:
+  - name: test-01
+    command:
+      - echo
+      - "foobar"
+    schedule: "@reboot"
+    captureStdout: true
+    failsWhen:
+      producesStdout: true
+    onFailure:
+      retry:
+        maximumRetries: 3
+        initialDelay: 1
+        maximumDelay: 30
+        backoffMultiplier: 2
+    onSuccess:
+      report:
+        mail:
+          from: example@foo.com
+          to: example@bar.com
+          smtpHost: 127.0.0.1
+          smtpPort: 10025
+          subject: Cron job '{{name}}' {% if success %}completed{% else %}failed{% endif %}
+          body: |
+           {% if stdout %}
+           {{stdout}}
+
+           (exit code: {{exit_code}})
+           {% endif %}
 
   - name: test-02
     command: |
-      for x in $(seq 1 3); do
-        echo "XXXXX $x XXXXX stderr" 1>&2
-        dmesg 1>&2
-        echo "XXXXX $x XXXXX stderr (end)" 1>&2
-
-        echo "XXXXX $x XXXXX stdout"
-        dmesg
-        echo "XXXXX $x XXXXX stdout (end)"
-        sleep 0.1
-      done
-      exit 1
-    schedule: "@reboot"
+      echo "hello" 1>&2
+      sleep 1
+      echo "world"
+      echo "\$FOO is: $FOO"
+      echo "\$BAR is: $BAR"
+      echo "\$ZBR is: $ZBR"
+      exit 10
+    schedule:
+      minute: "*/2"
     captureStderr: true
-    captureStdout: true
-    saveLimit: 10
     environment:
       - key: FOO
         value: xpto
       - key: ZBR
         value: blah
 
+  - name: test-03
+    command: |
+      trap "echo '(ignoring SIGTERM)'" TERM
+      echo "starting..."
+      sleep 10
+      echo "all done."
+    schedule:
+      minute: "*"
+    # schedule: "* * * * *"
+    captureStderr: true
+    executionTimeout: 1
+    killTimeout: 0.5
