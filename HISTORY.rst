@@ -2,6 +2,12 @@
 History
 =======
 
+?????
+-------
+
+* smtp: new tls, startls, username, and password options (#21)
+
+
 0.10.1 (2020-06-02)
 -------------------
 

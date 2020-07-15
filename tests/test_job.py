@@ -78,6 +78,11 @@ jobs:
           smtpHost: smtp1
           smtpPort: 1025
           subject: "Cron job '{{name}}' {% if success %}completed{% else %}failed{% endif %}"
+          password:
+            value: foobar
+          username: thisisme
+          tls: false
+          starttls: true
           body: |
             {% if stdout and stderr -%}
             STDOUT:
@@ -144,10 +149,18 @@ def test_report_mail(success, stdout, stderr, subject, body):
     loop = asyncio.get_event_loop()
 
     connect_calls = []
+    start_tls_calls = []
+    login_calls = []
     messages_sent = []
 
     async def connect(self):
         connect_calls.append(self)
+
+    async def starttls(self):
+        start_tls_calls.append(self)
+
+    async def login(self, username, password):
+        login_calls.append((username, password))
 
     async def send_message(self, message):
         messages_sent.append(message)
@@ -162,13 +175,22 @@ def test_report_mail(success, stdout, stderr, subject, body):
 
     with patch("aiosmtplib.SMTP.__init__", init), patch(
         "aiosmtplib.SMTP.connect", connect
-    ), patch("aiosmtplib.SMTP.send_message", send_message):
+    ), patch("aiosmtplib.SMTP.send_message", send_message), patch(
+        "aiosmtplib.SMTP.login", login
+    ), patch(
+        "aiosmtplib.SMTP.starttls", starttls
+    ):
         loop.run_until_complete(
             mail.report(success, job, job_config.onSuccess["report"])
         )
 
-    assert smtp_init_args == ((), {"hostname": "smtp1", "port": 1025})
+    assert smtp_init_args == (
+        (),
+        {"hostname": "smtp1", "port": 1025, "use_tls": False},
+    )
     assert len(connect_calls) == 1
+    assert len(start_tls_calls) == 1
+    assert login_calls == [("thisisme", "foobar")]
     assert len(messages_sent) == 1
     message = messages_sent[0]
     assert message["From"] == "example@foo.com"

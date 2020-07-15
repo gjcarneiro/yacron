@@ -121,12 +121,11 @@ class SentryReporter(Reporter):
         }
         extra.update(config.get("extra", {}))
         logger.debug(
-            "sentry: fingerprint=%r; extra=%r",
+            "sentry: fingerprint=%r; extra=%r' body:\n%s",
             fingerprint,
             extra,
+            body,
         )
-        if logger.isEnabledFor(logging.DEBUG):
-            print("sentry: body:\n" + body, file=sys.stderr)
         with sentry_sdk.configure_scope() as scope:
             for key, val in extra.items():
                 scope.set_extra(key, val)
@@ -145,6 +144,21 @@ class MailReporter(Reporter):
             return  # email reporting disabled
         smtp_host = mail["smtpHost"]
         smtp_port = mail["smtpPort"]
+
+        password = None  # type: Optional[str]
+        username = None  # type: Optional[str]
+
+        if mail["password"]["value"]:
+            password = mail["password"]["value"]
+        elif mail["password"]["fromFile"]:
+            with open(mail["password"]["fromFile"], "rt") as pass_file:
+                password = pass_file.read().strip()
+        elif mail["password"]["fromEnvVar"]:
+            password = os.environ[mail["password"]["fromEnvVar"]]
+        else:
+            password = None
+        username = mail.get("username")
+
         tmpl_vars = job.template_vars
         body_tmpl = jinja2.Template(mail["body"])
         body = body_tmpl.render(tmpl_vars)
@@ -159,8 +173,14 @@ class MailReporter(Reporter):
         message["From"] = mail["from"]
         message["To"] = mail["to"]
         message["Subject"] = subject
-        smtp = aiosmtplib.SMTP(hostname=smtp_host, port=smtp_port)
+        smtp = aiosmtplib.SMTP(hostname=smtp_host, port=smtp_port,
+                               use_tls=mail["tls"])
         await smtp.connect()
+        if mail["starttls"]:
+            await smtp.starttls()
+        if username and password:
+            await smtp.login(username=username, password=password)
+
         await smtp.send_message(message)
 
 

@@ -198,6 +198,15 @@ email and Sentry (additional reporting methods might be added in the future):
           from: example@foo.com
           to: example@bar.com
           smtpHost: 127.0.0.1
+          # optional fields:
+          username: "username1"  # set username and password to enable login
+          pasword:
+            value: example
+            # Alternatively:
+            # fromFile: /etc/secrets/my-secret-password
+            # fromEnvVar: MAIL_PASSWORD
+          tls: false  # set to true to enable TLS
+          starttls: false  # set to true to enable StartTLS
 
 Here, the ``onFailure`` object indicates that what to do when a job failure
 is detected.  In this case we ask for it to be reported both to sentry and by

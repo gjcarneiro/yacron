@@ -103,6 +103,14 @@ jobs:
                             "subject"
                         ]
                     ),
+                    "username": None,
+                    "password": {
+                        "fromEnvVar": None,
+                        "fromFile": None,
+                        "value": None,
+                    },
+                    "tls": False,
+                    "starttls": False,
                 },
                 "sentry": (
                     config.DEFAULT_CONFIG["onFailure"]["report"]["sentry"]
@@ -165,6 +173,14 @@ jobs:
                             "subject"
                         ]
                     ),
+                    "username": None,
+                    "password": {
+                        "fromEnvVar": None,
+                        "fromFile": None,
+                        "value": None,
+                    },
+                    "tls": False,
+                    "starttls": False,
                 },
                 "sentry": (
                     config.DEFAULT_CONFIG["onFailure"]["report"]["sentry"]

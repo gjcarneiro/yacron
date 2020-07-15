@@ -64,8 +64,12 @@ _REPORT_DEFAULTS = {
         "to": None,
         "smtpHost": None,
         "smtpPort": 25,
+        "tls": False,
+        "starttls": False,
         "subject": DEFAULT_SUBJECT_TEMPLATE,
         "body": DEFAULT_BODY_TEMPLATE,
+        "username": None,
+        "password": {"value": None, "fromFile": None, "fromEnvVar": None},
     },
 }
 
@@ -126,6 +130,16 @@ _report_schema = Map(
                 Opt("smtpPort"): Int(),
                 Opt("subject"): Str(),
                 Opt("body"): Str(),
+                Opt("username"): Str(),
+                Opt("password"): Map(
+                    {
+                        Opt("value"): EmptyNone() | Str(),
+                        Opt("fromFile"): EmptyNone() | Str(),
+                        Opt("fromEnvVar"): EmptyNone() | Str(),
+                    }
+                ),
+                Opt("tls"): Bool(),
+                Opt("starttls"): Bool(),
             }
         ),
     }
