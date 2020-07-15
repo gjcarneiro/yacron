@@ -310,19 +310,25 @@ class RunningJob:
 
     @property
     def failed(self) -> bool:
+        return self.fail_reason is not None
+
+    @property
+    def fail_reason(self) -> Optional[str]:
         if self.config.failsWhen["always"]:
-            return True
+            return "failsWhen=always"
         if self.config.failsWhen["nonzeroReturn"] and self.retcode != 0:
-            return True
+            return "failsWhen=nonzeroReturn and retcode={}".format(
+                self.retcode
+            )
         if self.config.failsWhen["producesStdout"] and (
             self.stdout or self.stdout_discarded
         ):
-            return True
+            return "failsWhen=producesStdout and stdout is not empty"
         if self.config.failsWhen["producesStderr"] and (
             self.stderr or self.stderr_discarded
         ):
-            return True
-        return False
+            return "failsWhen=producesStderr and stderr is not empty"
+        return None
 
     async def cancel(self) -> None:
         if self.proc is None:
@@ -375,9 +381,11 @@ class RunningJob:
 
     @property
     def template_vars(self) -> dict:
+        fail_reason = self.fail_reason
         return {
             "name": self.config.name,
-            "success": not self.failed,
+            "success": fail_reason is None,
+            "fail_reason": fail_reason,
             "stdout": self.stdout,
             "stderr": self.stderr,
             "exit_code": self.retcode,

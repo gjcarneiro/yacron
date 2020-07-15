@@ -29,6 +29,9 @@ class ConfigError(Exception):
 
 
 DEFAULT_BODY_TEMPLATE = """
+{% if fail_reason -%}
+(job failed because {{fail_reason}})
+{% endif %}
 {% if stdout and stderr -%}
 STDOUT:
 ---

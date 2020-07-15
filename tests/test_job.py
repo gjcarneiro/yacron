@@ -184,7 +184,8 @@ def test_report_mail(success, stdout, stderr, subject, body):
         (
             True,
             "value",
-            "Cron job 'test' completed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
+            "Cron job 'test' completed\n\n(job failed because reasons)"
+            "\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
             {
                 "job": "test",
                 "exit_code": 0,
@@ -200,7 +201,8 @@ def test_report_mail(success, stdout, stderr, subject, body):
         (
             False,
             "file",
-            "Cron job 'test' failed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
+            "Cron job 'test' failed\n\n(job failed because reasons)"
+            "\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
             {
                 "job": "test",
                 "exit_code": 0,
@@ -216,7 +218,8 @@ def test_report_mail(success, stdout, stderr, subject, body):
         (
             False,
             "envvar",
-            "Cron job 'test' failed\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
+            "Cron job 'test' failed\n\n(job failed because reasons)"
+            "\n\nSTDOUT:\n---\nout\n---\nSTDERR:\nerr\n",
             {
                 "job": "test",
                 "exit_code": 0,
@@ -289,6 +292,7 @@ def test_report_sentry(
         stderr="err",
         retcode=0,
         template_vars={
+            "fail_reason": "reasons",
             "name": job_config.name,
             "success": success,
             "stdout": "out",

@@ -355,16 +355,17 @@ class Cron:
                     if not jobs_list:
                         del self.running_jobs[job.config.name]
 
+                    fail_reason = job.fail_reason
                     logger.info(
                         "Job %s exit code %s; has stdout: %s, "
-                        "has stderr: %s; failed: %s",
+                        "has stderr: %s; fail_reason: %r",
                         job.config.name,
                         job.retcode,
                         str(bool(job.stdout)).lower(),
                         str(bool(job.stderr)).lower(),
-                        str(job.failed).lower(),
+                        fail_reason,
                     )
-                    if job.failed:
+                    if fail_reason is not None:
                         await self.handle_job_failure(job)
                     else:
                         await self.handle_job_success(job)
