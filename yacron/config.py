@@ -180,7 +180,7 @@ _job_defaults_common = {
     Opt("environment"): Seq(Map({"key": Str(), "value": Str()})),
     Opt("executionTimeout"): Float(),
     Opt("killTimeout"): Float(),
-    Opt("statsd"): Map({"prefix": Str(), "host": Str(), "port": Int(),}),
+    Opt("statsd"): Map({"prefix": Str(), "host": Str(), "port": Int()}),
     Opt("user"): Str() | Int(),
     Opt("group"): Str() | Int(),
 }
