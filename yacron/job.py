@@ -7,6 +7,7 @@ import time
 from email.mime.text import MIMEText
 from socket import gethostname
 from typing import Any, Awaitable, Dict, List, Optional, Union, Tuple  # noqa
+import subprocess
 
 import sentry_sdk
 
@@ -173,8 +174,9 @@ class MailReporter(Reporter):
         message["From"] = mail["from"]
         message["To"] = mail["to"]
         message["Subject"] = subject
-        smtp = aiosmtplib.SMTP(hostname=smtp_host, port=smtp_port,
-                               use_tls=mail["tls"])
+        smtp = aiosmtplib.SMTP(
+            hostname=smtp_host, port=smtp_port, use_tls=mail["tls"]
+        )
         await smtp.connect()
         if mail["starttls"]:
             await smtp.starttls()
@@ -259,9 +261,9 @@ class RunningJob:
             for envvar in self.config.environment:
                 env[envvar["key"]] = envvar["value"]
                 self.env = env
-            kwargs['env'] = env
+            kwargs["env"] = env
         if self.config.uid is not None or self.config.gid is not None:
-            kwargs['preexec_fn'] = self._demote
+            kwargs["preexec_fn"] = self._demote
         logger.debug("%s: will execute argv %r", self.config.name, cmd)
         if self.config.captureStderr:
             kwargs["stderr"] = asyncio.subprocess.PIPE
@@ -272,7 +274,13 @@ class RunningJob:
                 time.perf_counter() + self.config.executionTimeout
             )
 
-        self.proc = await create(*cmd, **kwargs)
+        try:
+            self.proc = await create(*cmd, **kwargs)
+        except subprocess.SubprocessError:
+            logger.exception(
+                "Error launching subprocess of job %s", self.config.name
+            )
+            return
 
         await self._on_start()
 
@@ -336,13 +344,15 @@ class RunningJob:
 
     async def _read_job_streams(self):
         if self._stderr_reader:
-            self.stderr, self.stderr_discarded = (
-                await self._stderr_reader.join()
-            )
+            (
+                self.stderr,
+                self.stderr_discarded,
+            ) = await self._stderr_reader.join()
         if self._stdout_reader:
-            self.stdout, self.stdout_discarded = (
-                await self._stdout_reader.join()
-            )
+            (
+                self.stdout,
+                self.stdout_discarded,
+            ) = await self._stdout_reader.join()
 
     @property
     def failed(self) -> bool:

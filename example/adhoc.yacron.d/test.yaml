@@ -53,6 +53,7 @@ jobs:
       - echo
       - "foobar"
     schedule: "@reboot"
+    user: www-data
     captureStdout: true
     failsWhen:
       producesStdout: true

@@ -180,11 +180,7 @@ _job_defaults_common = {
     Opt("environment"): Seq(Map({"key": Str(), "value": Str()})),
     Opt("executionTimeout"): Float(),
     Opt("killTimeout"): Float(),
-    Opt("statsd"): Map({
-        'prefix': Str(),
-        'host': Str(),
-        'port': Int(),
-    }),
+    Opt("statsd"): Map({"prefix": Str(), "host": Str(), "port": Int(),}),
     Opt("user"): Str() | Int(),
     Opt("group"): Str() | Int(),
 }
@@ -278,7 +274,7 @@ class JobConfig:
         self.uid = None
         self.gid = None
 
-        user = config.pop('user', None)
+        user = config.pop("user", None)
         if user is not None:
             if isinstance(user, int):
                 self.uid = user
@@ -290,7 +286,7 @@ class JobConfig:
                 except KeyError:
                     raise ConfigError("User not found: {!r}".format(user))
 
-        group = config.pop('group', None)
+        group = config.pop("group", None)
         if group is not None:
             if isinstance(group, int):
                 self.gid = group
@@ -299,6 +295,13 @@ class JobConfig:
                     self.gid = getgrnam(group).gr_gid
                 except KeyError:
                     raise ConfigError("Group not found: {!r}".format(group))
+
+        if self.uid is not None or self.gid is not None:
+            if os.geteuid() != 0:
+                raise ConfigError(
+                    "Job {} wants to change user or group, "
+                    "but yacron is not running as superuser".format(self.name)
+                )
 
 
 def parse_config_file(
