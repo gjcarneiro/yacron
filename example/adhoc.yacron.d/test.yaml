@@ -1,3 +1,8 @@
+web:
+  listen:
+     - http://127.0.0.1:8080
+     - unix:///tmp/yacron.sock
+
 defaults:
   shell: /bin/bash
 
@@ -14,8 +19,12 @@ defaults:
   onPermanentFailure:
     report:
       sentry:
-         dsn:
-           value:
+        dsn:
+          value:
+        extra:
+          foo: bar
+          zbr: 123
+        level: warning
       mail:
         from: example@foo.com
         to: example@bar.com
@@ -26,6 +35,7 @@ defaults:
          {{stderr}}
 
          (exit code: {{exit_code}})
+
   environment:
     - key: FOO
       value: foo
@@ -42,7 +52,7 @@ jobs:
     command:
       - echo
       - "foobar"
-    schedule: "* * * * *"
+    schedule: "@reboot"
     captureStdout: true
     failsWhen:
       producesStdout: true

@@ -3,11 +3,10 @@ import time
 import asyncio
 
 
-logger = logging.getLogger('statsd')
+logger = logging.getLogger("statsd")
 
 
 class StatsdClientProtocol:
-
     def __init__(self, message, loop):
         self.message = message
         self.loop = loop
@@ -21,7 +20,7 @@ class StatsdClientProtocol:
         pass
 
     def error_received(self, exc):
-        logger.error('UDP error received:', exc)
+        logger.error("UDP error received:", exc)
 
     def connection_lost(self, exc):
         pass
@@ -30,14 +29,13 @@ class StatsdClientProtocol:
 async def send_to_statsd(host, port, message):
     loop = asyncio.get_event_loop()
     connect = loop.create_datagram_endpoint(
-        lambda: StatsdClientProtocol(message, loop),
-        remote_addr=(host, port))
+        lambda: StatsdClientProtocol(message, loop), remote_addr=(host, port)
+    )
     transport, protocol = await connect
     transport.close()
 
 
 class StatsdJobMetricWriter:
-
     def __init__(self, host, port, prefix, job):
         self.host = host
         self.port = port
@@ -50,7 +48,7 @@ class StatsdJobMetricWriter:
         await send_to_statsd(
             self.host,
             self.port,
-            '{prefix}.start:1|g\n'.format(prefix=self.prefix)
+            "{prefix}.start:1|g\n".format(prefix=self.prefix),
         )
 
     async def job_stopped(self) -> None:
@@ -62,9 +60,9 @@ class StatsdJobMetricWriter:
             self.host,
             self.port,
             (
-                '{prefix}.stop:1|g\n'
-                '{prefix}.success:{success}|g\n'
-                '{prefix}.duration:{duration}|ms|@0.1\n'
+                "{prefix}.stop:1|g\n"
+                "{prefix}.success:{success}|g\n"
+                "{prefix}.duration:{duration}|ms|@0.1\n"
             ).format(
                 prefix=self.prefix,
                 success=0 if self.job.failed else 1,

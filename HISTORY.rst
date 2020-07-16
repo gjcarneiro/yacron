@@ -2,8 +2,53 @@
 History
 =======
 
-?.?.? (??????)
---------------
+?????
+-------
+
+* reporting: add a failure reason line at the top of sentry/email (#36)
+* mail: new tls, startls, username, and password options (#21)
+
+
+0.10.1 (2020-06-02)
+-------------------
+
+* Minor bugfixes
+
+
+0.10.0 (2019-11-03)
+-------------------
+
+* HTTP remote interface, allowing to get job status and start jobs on demand
+* Simple Linux binary including all dependencies (built using PyOxidizer)
+
+0.10.0b2 (2019-10-26)
+---------------------
+
+* Build Linux binary inside Docker Ubuntu 16.04, so that it is compatible with
+  older glibc systems
+
+0.10.0b1 (2019-10-13)
+---------------------
+* Build a standalone Linux binary, using PyOxidizer
+* Switch from raven to sentry-sdk
+
+0.9.0 (2019-04-03)
+------------------
+* Added an option to just check if the yaml file is valid without running the scheduler.
+* Fix missing `body` in the schema for sentry config
+
+
+0.8.1 (2018-10-16)
+------------------
+* Fix a bug handling ``@reboot`` in schedule (#22)
+
+0.8.0 (2018-05-14)
+------------------
+* Sentry: add new ``extra`` and ``level`` options.
+
+
+0.7.0 (2018-03-21)
+------------------
 
 * Added the ``utc`` option and document that times are utc by default (#17);
 * If an email body is empty, skip sending it;

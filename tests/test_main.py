@@ -8,7 +8,6 @@ from unittest.mock import Mock
 
 
 class FakeCron:
-
     def __init__(self, config_arg):
         parse_config(config_arg)
 
