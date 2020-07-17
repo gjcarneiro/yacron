@@ -26,7 +26,8 @@ Features
   * Logs everything to stdout/stderr [1]_;
 
 * Option to automatically retry failing cron jobs, with exponential backoff;
-* Optional HTTP REST API, to fetch status and start jobs on demand.
+* Optional HTTP REST API, to fetch status and start jobs on demand;
+* Arbitrary timezone support;
 
 
 .. [1] Whereas vixie cron only logs to syslog, requiring a syslog daemon to be running in the background or else you don't get logs!
@@ -119,6 +120,18 @@ every day at 19h27 *local time* because of the ``utc: false`` option:
       command: echo "hello"
       schedule: "27 19 * * *"
       utc: false
+      captureStdout: true
+
+Since Yacron version XXX, you can also request that the schedule be
+interpreted in an arbitrary timezone, using the ``timezone`` attribute:
+
+.. code-block:: yaml
+
+  jobs:
+    - name: test-01
+      command: echo "hello"
+      schedule: "27 19 * * *"
+      timezone: America/Los_Angeles
       captureStdout: true
 
 

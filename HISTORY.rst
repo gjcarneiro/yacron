@@ -8,6 +8,7 @@ History
 * reporting: add a failure reason line at the top of sentry/email (#36)
 * mail: new tls, startls, username, and password options (#21)
 * allow jobs to run as a different user (#18)
+* Support timezone schedule (#26)
 
 
 0.10.1 (2020-06-02)

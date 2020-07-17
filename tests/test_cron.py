@@ -1,6 +1,7 @@
 import time
 import datetime
 from pathlib import Path
+import pytz
 
 import yacron.cron
 from yacron.job import RunningJob
@@ -15,8 +16,11 @@ def fixed_current_time(monkeypatch):
         year=1999, month=12, day=31, hour=12, minute=0, second=0
     )
 
-    def get_now(utc):
-        return FIXED_TIME
+    def get_now(timezone):
+        now = FIXED_TIME
+        if timezone is not None:
+            now = now.astimezone(timezone)
+        return now
 
     monkeypatch.setattr("yacron.cron.get_now", get_now)
 
@@ -283,10 +287,13 @@ def test_concurrency_policy(
 
     t0 = time.perf_counter()
 
-    def get_now(utc):
-        return START_TIME + datetime.timedelta(
+    def get_now(timezone):
+        now = START_TIME + datetime.timedelta(
             seconds=(time.perf_counter() - t0)
         )
+        if timezone is not None:
+            now = now.astimezone(timezone)
+        return now
 
     monkeypatch.setattr("yacron.cron.get_now", get_now)
 
@@ -383,10 +390,13 @@ def test_concurrency_and_backoff(monkeypatch):
 
     t0 = time.perf_counter()
 
-    def get_now(utc):
-        return START_TIME + datetime.timedelta(
+    def get_now(timezone):
+        now = START_TIME + datetime.timedelta(
             seconds=(time.perf_counter() - t0)
         )
+        if timezone is not None:
+            now = now.astimezone(timezone)
+        return now
 
     def get_reltime(ts):
         return START_TIME + datetime.timedelta(seconds=(ts - t0))
@@ -454,3 +464,123 @@ def test_concurrency_and_backoff(monkeypatch):
 def test_naturaltime(value_in, out):
     got_out = yacron.cron.naturaltime(value_in, future=True)
     assert got_out == out
+
+
+DT = datetime.datetime
+UTC = datetime.timezone.utc
+LONDON = pytz.timezone("Europe/London")
+
+
+@pytest.mark.parametrize(
+    "schedule, timezone, utc, now, reboot, result",
+    [
+        (
+            "* * * * *",
+            "",
+            "",
+            DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
+            False,
+            True,
+        ),
+        (
+            "59 14 * * *",
+            "",
+            "",
+            DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
+            False,
+            True,
+        ),
+        (
+            "49 14 * * *",
+            "",
+            "",
+            DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
+            False,
+            False,
+        ),
+        (
+            "59 14 * * *",
+            "",
+            "utc: true",
+            DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
+            False,
+            True,
+        ),
+        (
+            "59 14 * * *",
+            "",
+            "utc: true",  # London is UTC+1 during DST
+            DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC).astimezone(LONDON),
+            False,
+            True,
+        ),
+        (
+            "59 14 * * *",
+            "",
+            "utc: false",  # London is UTC+1 during DST
+            DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC).astimezone(LONDON),
+            False,
+            False,
+        ),
+        (
+            "1 8 * * *",
+            "timezone: America/Los_Angeles",
+            "",
+            DT(2020, 7, 20, 15, 1, 1, tzinfo=UTC),
+            False,
+            True,
+        ),
+        (
+            "1 8 * * *",
+            "timezone: Europe/London",
+            "",
+            DT(2020, 7, 20, 15, 1, 1, tzinfo=UTC),
+            False,
+            False,
+        ),
+        (
+            "@reboot",
+            "",
+            "",
+            DT(2020, 7, 20, 15, 1, 1, tzinfo=UTC),
+            False,
+            False,
+        ),
+        (
+            "@reboot",
+            "",
+            "",
+            DT(2020, 7, 20, 15, 1, 1, tzinfo=UTC),
+            True,
+            True,
+        ),
+    ],
+)
+def test_job_should_run(
+    monkeypatch, schedule, timezone, utc, now, reboot, result
+):
+    def get_now(timezone):
+        print("timezone: ", timezone)
+        retval = now
+        if timezone is not None:
+            retval = retval.astimezone(timezone)
+        print("now: ", retval)
+        return retval
+
+    monkeypatch.setattr("yacron.cron.get_now", get_now)
+
+    config_yaml = """
+jobs:
+  - name: test
+    command: |
+      echo "foobar"
+    schedule: "{schedule}"
+    {timezone}
+    {utc}
+                            """.format(
+        schedule=schedule, timezone=timezone, utc=utc
+    )
+    print(config_yaml)
+    cron = yacron.cron.Cron(None, config_yaml=config_yaml)
+    job = list(cron.cron_jobs.values())[0]
+    assert cron.job_should_run(reboot, job) == result

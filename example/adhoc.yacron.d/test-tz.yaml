@@ -5,10 +5,12 @@ web:
 
 defaults:
   shell: /bin/bash
-  utc: false
 
 jobs:
   - name: test-01
     command: echo "hello"
-    schedule: "27 19 * * *"
+    schedule: "15 9 * * *"
     captureStdout: true
+    utc: false
+    timezone: America/Los_Angeles
+    # timezone: UTC

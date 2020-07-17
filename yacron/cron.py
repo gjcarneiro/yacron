@@ -39,19 +39,13 @@ def naturaltime(seconds: float, future=False) -> str:
     return "in {} day{}".format(int(days), "s" if days >= 2 else "")
 
 
-def get_now(utc: bool) -> datetime.datetime:
-    if utc:  # pragma: no cover
-        return datetime.datetime.utcnow()
-    else:
-        return datetime.datetime.now()
+def get_now(timezone: Optional[datetime.tzinfo]) -> datetime.datetime:
+    return datetime.datetime.now(timezone)
 
 
 def next_sleep_interval() -> float:
-    now = get_now(False)
-    target = (
-        datetime.datetime(now.year, now.month, now.day, now.hour, now.minute)
-        + WAKEUP_INTERVAL
-    )
+    now = get_now(datetime.timezone.utc)
+    target = now.replace(second=0) + WAKEUP_INTERVAL
     return (target - now).total_seconds()
 
 
@@ -173,12 +167,13 @@ class Cron:
                 )
             else:
                 crontab = job.schedule  # type: Union[CronTab, str]
+                now = get_now(job.timezone)
                 out.append(
                     {
                         "job": name,
                         "status": "scheduled",
                         "scheduled_in": (
-                            crontab.next(default_utc=job.utc)
+                            crontab.next(now=now, default_utc=job.utc)
                             if isinstance(crontab, CronTab)
                             else str(crontab)
                         ),
@@ -252,30 +247,42 @@ class Cron:
                     pass
             self.web_config = web_config
 
-    async def spawn_jobs(self, startup) -> None:
+    async def spawn_jobs(self, startup: bool) -> None:
         for job in self.cron_jobs.values():
-            if startup and job.schedule == "@reboot":
+            if self.job_should_run(startup, job):
+                await self.launch_scheduled_job(job)
+
+    @staticmethod
+    def job_should_run(startup: bool, job: JobConfig) -> bool:
+        if (
+            startup
+            and isinstance(job.schedule, str)
+            and job.schedule == "@reboot"
+        ):
+            logger.debug(
+                "Job %s (%s) is scheduled for startup (@reboot)",
+                job.name,
+                job.schedule_unparsed,
+            )
+            return True
+        elif isinstance(job.schedule, CronTab):
+            crontab = job.schedule  # type: CronTab
+            if crontab.test(get_now(job.timezone).replace(second=0)):
                 logger.debug(
-                    "Job %s (%s) is scheduled for startup (@reboot)",
+                    "Job %s (%s) is scheduled for now",
                     job.name,
                     job.schedule_unparsed,
                 )
-                await self.launch_scheduled_job(job)
-            elif isinstance(job.schedule, CronTab):
-                crontab = job.schedule  # type: CronTab
-                if crontab.test(get_now(job.utc)):
-                    logger.debug(
-                        "Job %s (%s) is scheduled for now",
-                        job.name,
-                        job.schedule_unparsed,
-                    )
-                    await self.launch_scheduled_job(job)
-                else:
-                    logger.debug(
-                        "Job %s (%s) not scheduled for now",
-                        job.name,
-                        job.schedule_unparsed,
-                    )
+                return True
+            else:
+                logger.debug(
+                    "Job %s (%s) not scheduled for now",
+                    job.name,
+                    job.schedule_unparsed,
+                )
+                return False
+        else:
+            return False
 
     async def launch_scheduled_job(self, job: JobConfig) -> None:
         await self.cancel_job_retries(job.name)

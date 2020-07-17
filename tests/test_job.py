@@ -3,7 +3,6 @@ import yacron.config
 import asyncio
 import pytest
 import aiosmtplib
-import sentry_sdk
 from unittest.mock import Mock, patch
 
 
@@ -77,7 +76,9 @@ jobs:
           to: example@bar.com
           smtpHost: smtp1
           smtpPort: 1025
-          subject: "Cron job '{{name}}' {% if success %}completed{% else %}failed{% endif %}"
+          subject: >
+            Cron job '{{name}}' {% if success %}completed{%
+            else %}failed{% endif %}
           password:
             value: foobar
           username: thisisme

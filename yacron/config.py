@@ -4,6 +4,8 @@ import logging
 import os.path
 from typing import Union  # noqa
 from typing import List, Optional, Any, Dict, NewType, Tuple
+import datetime
+import pytz
 
 import strictyaml
 from strictyaml import Optional as Opt, EmptyDict
@@ -83,6 +85,7 @@ DEFAULT_CONFIG = {
     "captureStdout": False,
     "saveLimit": 4096,
     "utc": True,
+    "timezone": None,
     "failsWhen": {
         "producesStdout": False,
         "producesStderr": True,
@@ -154,6 +157,7 @@ _job_defaults_common = {
     Opt("captureStdout"): Bool(),
     Opt("saveLimit"): Int(),
     Opt("utc"): Bool(),
+    Opt("timezone"): Str(),
     Opt("failsWhen"): Map(
         {
             "producesStdout": Bool(),
@@ -255,13 +259,22 @@ class JobConfig:
             logger.debug("Converted schedule to %r", tab)
             self.schedule = CronTab(tab)
         else:
-            raise ValueError("invalid schedule: %r", self.schedule_unparsed)
+            raise ConfigError("invalid schedule: %r", self.schedule_unparsed)
         self.shell = config.pop("shell")
         self.concurrencyPolicy = config.pop("concurrencyPolicy")
         self.captureStderr = config.pop("captureStderr")
         self.captureStdout = config.pop("captureStdout")
         self.saveLimit = config.pop("saveLimit")
         self.utc = config.pop("utc")
+        self.timezone = None  # type: Optional[datetime.tzinfo]
+        if config["timezone"] is not None:
+            try:
+                self.timezone = pytz.timezone(config["timezone"])
+            except pytz.UnknownTimeZoneError as err:
+                raise ConfigError("uknown timezone: " + str(err))
+        elif self.utc:
+            self.timezone = datetime.timezone.utc
+
         self.failsWhen = config.pop("failsWhen")
         self.onFailure = config.pop("onFailure")
         self.onPermanentFailure = config.pop("onPermanentFailure")

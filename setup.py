@@ -11,11 +11,12 @@ with open("README.rst") as readme_file:
 
 requirements = [
     "strictyaml>=0.7.2",
-    "crontab==0.22.6",
+    "crontab==0.22.8",
     "aiohttp>=3.0",
     "sentry-sdk",
     "aiosmtplib",
     "jinja2",
+    "pytz",
 ]
 
 

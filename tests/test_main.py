@@ -4,7 +4,6 @@ import sys
 import asyncio
 from pathlib import Path
 import pytest
-from unittest.mock import Mock
 
 
 class FakeCron:
