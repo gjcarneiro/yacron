@@ -2,8 +2,8 @@
 History
 =======
 
-?????
--------
+0.11.0 (2020-07-20)
+-------------------
 
 * reporting: add a failure reason line at the top of sentry/email (#36)
 * mail: new tls, startls, username, and password options (#21)

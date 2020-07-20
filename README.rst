@@ -122,7 +122,7 @@ every day at 19h27 *local time* because of the ``utc: false`` option:
       utc: false
       captureStdout: true
 
-Since Yacron version XXX, you can also request that the schedule be
+Since Yacron version 0.11, you can also request that the schedule be
 interpreted in an arbitrary timezone, using the ``timezone`` attribute:
 
 .. code-block:: yaml
@@ -478,7 +478,7 @@ will send it a SIGKILL after half a second:
 Change to another user/group
 ++++++++++++++++++++++++++++
 
-(new in version XXX)
+(new in version 0.11)
 
 You can request that Yacron change to another user and/or group for a specific
 cron job.  The field ``user`` indicates the user (uid or userame) under which
