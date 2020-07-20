@@ -19,7 +19,10 @@ def fixed_current_time(monkeypatch):
     def get_now(timezone):
         now = FIXED_TIME
         if timezone is not None:
-            now = now.astimezone(timezone)
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone)
+            else:
+                now = now.astimezone(timezone)
         return now
 
     monkeypatch.setattr("yacron.cron.get_now", get_now)
@@ -292,7 +295,10 @@ def test_concurrency_policy(
             seconds=(time.perf_counter() - t0)
         )
         if timezone is not None:
-            now = now.astimezone(timezone)
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone)
+            else:
+                now = now.astimezone(timezone)
         return now
 
     monkeypatch.setattr("yacron.cron.get_now", get_now)
@@ -395,7 +401,10 @@ def test_concurrency_and_backoff(monkeypatch):
             seconds=(time.perf_counter() - t0)
         )
         if timezone is not None:
-            now = now.astimezone(timezone)
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone)
+            else:
+                now = now.astimezone(timezone)
         return now
 
     def get_reltime(ts):
