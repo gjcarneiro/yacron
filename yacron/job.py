@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 import time
-from email.mime.text import MIMEText
+from email.message import EmailMessage
 from socket import gethostname
 from typing import Any, Awaitable, Dict, List, Optional, Union, Tuple  # noqa
 import subprocess
@@ -170,7 +170,8 @@ class MailReporter(Reporter):
         subject = subject_tmpl.render(tmpl_vars)
 
         logger.debug("smtp: host=%r, port=%r", smtp_host, smtp_port)
-        message = MIMEText(body)
+        message = EmailMessage()
+        message.set_content(body)
         message["From"] = mail["from"]
         message["To"] = mail["to"]
         message["Subject"] = subject

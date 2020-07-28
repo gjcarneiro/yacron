@@ -2,6 +2,12 @@
 History
 =======
 
+0.11.1 (???)
+------------
+
+* Fix email reporting when multiple recipients given
+
+
 0.11.0 (2020-07-20)
 -------------------
 
