@@ -48,6 +48,13 @@ yacron requires Python >= 3.5.3.  It is advisable to install it in a Python virt
     . yacronenv/bin/activate
     pip install yacron
 
+Alternatively, install it via pipx_:
+
+.. code-block:: shell
+
+    pipx install yacron
+
+.. _pipx: https://github.com/pipxproject/pipx
 
 Usage
 -----
