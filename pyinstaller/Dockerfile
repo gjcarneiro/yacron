@@ -25,5 +25,5 @@ RUN git status
 RUN python setup.py install
 RUN python pyinstaller/yacron --version
 RUN pyinstaller pyinstaller/yacron.spec
-RUN ls -sFh pyinstaller/dist/yacron
+RUN ls -sFh dist/yacron
 RUN dist/yacron --version
