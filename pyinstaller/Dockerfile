@@ -19,17 +19,11 @@ COPY pyinstaller/requirements.txt /root
 RUN pip install -U pip
 RUN pip install -r /root/requirements.txt
 
-COPY setup.py README.rst HISTORY.rst /root/
-COPY yacron /root/yacron
-WORKDIR /root
-COPY .git /root/.git
-COPY yacron/version.py /root/yacron/version.py
-RUN ls -F
-RUN cat setup.py
+COPY . /root/yacron
+WORKDIR /root/yacron
+RUN git status
 RUN python setup.py install
-COPY pyinstaller/yacron.spec /root
-COPY pyinstaller/yacron /root/yacron-main
-RUN python /root/yacron-main --version
-RUN pyinstaller yacron.spec
-RUN ls -sFh /root/dist/yacron
-RUN /root/dist/yacron --version
+RUN python pyinstaller/yacron --version
+RUN pyinstaller pyinstaller/yacron.spec
+RUN ls -sFh pyinstaller/dist/yacron
+RUN dist/yacron --version
