@@ -40,21 +40,37 @@ finding and fixing bugs before the first stable release.
 
 Installation
 ------------
-yacron requires Python >= 3.5.3.  It is advisable to install it in a Python virtual environment, for example:
+
+Install using pip
++++++++++++++++++
+
+yacron requires Python >= 3.5.3.  It is advisable to install it in a Python
+virtual environment, for example:
 
 .. code-block:: shell
 
-    virtualenv -p python3 yacronenv
+    python3 -m venv yacronenv
     . yacronenv/bin/activate
     pip install yacron
 
-Alternatively, install it via pipx_:
+Install using pipx
+++++++++++++++++++
+
+pipx_ automates creating a virtualenv and installing a python program in the
+newly created virtualenv.  It is as simple as:
 
 .. code-block:: shell
 
     pipx install yacron
 
 .. _pipx: https://github.com/pipxproject/pipx
+
+Install using binary
+++++++++++++++++++++
+
+Alternatively, for some releases a self-contained binary can be downloaded
+from github: https://github.com/gjcarneiro/yacron/releases. This binary should
+work on any Linux 64-bit system post glibc 2.23 (e.g. Ubuntu:16.04).
 
 Usage
 -----
@@ -64,8 +80,10 @@ or directory path as the ``-c`` argument.  For example::
 
     yacron -c /tmp/my-crontab.yaml
 
-This starts yacron (always in the foreground!), reading ``/tmp/my-crontab.yaml``
-as configuration file.  If the path is a directory, any ``*.yaml`` or ``*.yml`` files inside this directory are taken as configuration files.
+This starts yacron (always in the foreground!), reading
+``/tmp/my-crontab.yaml`` as configuration file.  If the path is a directory,
+any ``*.yaml`` or ``*.yml`` files inside this directory are taken as
+configuration files.
 
 Configuration basics
 ++++++++++++++++++++

@@ -2,6 +2,11 @@
 History
 =======
 
+0.11.2 (2020-11-29)
+-------------------
+
+* Add back a self contained binary, this time based on PyInstaller
+
 0.11.1 (2020-07-29)
 -------------------
 
