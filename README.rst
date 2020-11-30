@@ -68,9 +68,9 @@ newly created virtualenv.  It is as simple as:
 Install using binary
 ++++++++++++++++++++
 
-Alternatively, for some releases a self-contained binary can be downloaded
+Alternatively, a self-contained binary can be downloaded
 from github: https://github.com/gjcarneiro/yacron/releases. This binary should
-work on any Linux 64-bit system post glibc 2.23 (e.g. Ubuntu:16.04).
+work on any Linux 64-bit system post glibc 2.23 (e.g. Ubuntu:16.04).  Python is not required on the target system (it is embedded in the executable).
 
 Usage
 -----
