@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import time
+from datetime import datetime, timezone
 from email.message import EmailMessage
 from socket import gethostname
 from typing import Any, Awaitable, Dict, List, Optional, Union, Tuple  # noqa
@@ -175,6 +176,7 @@ class MailReporter(Reporter):
         message["From"] = mail["from"]
         message["To"] = mail["to"]
         message["Subject"] = subject
+        message["Date"] = datetime.now(timezone.utc)
         smtp = aiosmtplib.SMTP(
             hostname=smtp_host, port=smtp_port, use_tls=mail["tls"]
         )
