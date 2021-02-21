@@ -27,7 +27,7 @@ def test_mergedicts_lists():
 
 
 def test_simple_config1():
-    jobs, web_config = config.parse_config_string(
+    jobs, web_config, _ = config.parse_config_string(
         """
 defaults:
   shell: /bin/bash
@@ -44,7 +44,8 @@ jobs:
     captureStderr: true
     executionTimeout: 1
     killTimeout: 0.5
-                       """
+                       """,
+        "",
     )
     assert web_config is None
     assert len(jobs) == 1
@@ -64,7 +65,7 @@ jobs:
 
 
 def test_config_default_report():
-    jobs, _ = config.parse_config_string(
+    jobs, _, _ = config.parse_config_string(
         """
 defaults:
   onFailure:
@@ -81,7 +82,8 @@ jobs:
     schedule:
       minute: "*"
     captureStderr: true
-                       """
+                       """,
+        "",
     )
     assert len(jobs) == 1
     job = jobs[0]
@@ -129,7 +131,7 @@ jobs:
 def test_config_default_report_override():
     # even if the default says send email on error, it should be possible for
     # specific jobs to override the default and disable sending email.
-    jobs, _ = config.parse_config_string(
+    jobs, _, _ = config.parse_config_string(
         """
 defaults:
   onFailure:
@@ -151,7 +153,8 @@ jobs:
         mail:
           to:
           from:
-                       """
+                       """,
+        "",
     )
     assert len(jobs) == 1
     job = jobs[0]
@@ -197,6 +200,6 @@ jobs:
 
 
 def test_empty_config1():
-    jobs, web_config = config.parse_config_string("")
+    jobs, web_config, _ = config.parse_config_string("", "")
     assert len(jobs) == 0
     assert web_config is None
