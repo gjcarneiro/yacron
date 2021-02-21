@@ -1,0 +1,12 @@
+defaults:
+  shell: /bin/ksh
+
+jobs:
+  - name: common-task
+    command: |
+      echo "hello"
+    schedule:
+      minute: "*"
+    captureStderr: true
+    executionTimeout: 1
+    killTimeout: 0.5

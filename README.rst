@@ -630,3 +630,42 @@ scheduled to run yet, for example for testing:
   Content-Type: application/octet-stream
   Date: Sun, 03 Nov 2019 19:50:20 GMT
   Server: Python/3.7 aiohttp/3.6.2
+
+
+Includes
+++++++++
+
+(new in version unreleased)
+
+You may have a use case where it's convenient to have multiple config files,
+and choose at runtime which one to use.  In that case, it might be useful if
+you can put common definitions (such as defaults for reporting, shell, etc.)
+in a separate file, that is included by the other files.
+
+To support this use case, it is possible to ask one config file to include
+another one, via the ``include`` directive.  It takes a list of file names:
+those files will be parsed as configuration and merged in with this file.
+
+Example, your main config file could be:
+
+.. code-block:: yaml
+
+  include:
+    - _inc.yaml
+
+  jobs:
+
+    - name: my job
+      ...
+
+And your included ``_inc.yaml`` file could contain some useful defaults:
+
+
+.. code-block:: yaml
+
+  defaults:
+    shell: /bin/bash
+    onPermanentFailure:
+      report:
+        sentry:
+          ...

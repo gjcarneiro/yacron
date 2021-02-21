@@ -38,14 +38,15 @@ def test_stream_reader(save_limit, input_lines, output, expected_failure):
         "cronjob-1", "stderr", fake_stream, save_limit
     )
 
-    config, _ = yacron.config.parse_config_string(
+    config, _, _ = yacron.config.parse_config_string(
         """
 jobs:
   - name: test
     command: foo
     schedule: "* * * * *"
     captureStderr: true
-"""
+""",
+        "",
     )
     job_config = config[0]
     job = yacron.job.RunningJob(job_config, None)
@@ -131,7 +132,7 @@ jobs:
     ],
 )
 def test_report_mail(success, stdout, stderr, subject, body):
-    config, _ = yacron.config.parse_config_string(A_JOB)
+    config, _, _ = yacron.config.parse_config_string(A_JOB, "")
     job_config = config[0]
     print(job_config.onSuccess["report"])
     job = Mock(
@@ -269,7 +270,7 @@ def test_report_sentry(
     tmpdir,
     monkeypatch,
 ):
-    config, _ = yacron.config.parse_config_string(A_JOB)
+    config, _, _ = yacron.config.parse_config_string(A_JOB, "")
     job_config = config[0]
 
     p = tmpdir.join("sentry-secret-dsn")
@@ -424,7 +425,7 @@ def test_job_run(monkeypatch, shell, command, expected_type, expected_args):
     else:
         command_snippet = "    command: " + command
 
-    config, _ = yacron.config.parse_config_string(
+    config, _, _ = yacron.config.parse_config_string(
         """
 jobs:
   - name: test
@@ -438,7 +439,8 @@ jobs:
         value: bar
 """.format(
             command=command_snippet, shell=shell
-        )
+        ),
+        "",
     )
     job_config = config[0]
 
@@ -468,7 +470,7 @@ jobs:
 
 
 def test_execution_timeout():
-    config, _ = yacron.config.parse_config_string(
+    config, _, _ = yacron.config.parse_config_string(
         """
 jobs:
   - name: test
@@ -480,7 +482,8 @@ jobs:
     schedule: "* * * * *"
     captureStderr: false
     captureStdout: true
-"""
+""",
+        "",
     )
     job_config = config[0]
 
@@ -496,13 +499,14 @@ jobs:
 
 
 def test_error1():
-    config, _ = yacron.config.parse_config_string(
+    config, _, _ = yacron.config.parse_config_string(
         """
 jobs:
   - name: test
     command: echo "hello"
     schedule: "* * * * *"
-"""
+""",
+        "",
     )
     job_config = config[0]
     job = yacron.job.RunningJob(job_config, None)
@@ -514,13 +518,14 @@ jobs:
 
 
 def test_error2():
-    config, _ = yacron.config.parse_config_string(
+    config, _, _ = yacron.config.parse_config_string(
         """
 jobs:
   - name: test
     command: echo "hello"
     schedule: "* * * * *"
-"""
+""",
+        "",
     )
     job_config = config[0]
     job = yacron.job.RunningJob(job_config, None)
@@ -531,13 +536,14 @@ jobs:
 
 
 def test_error3():
-    config, _ = yacron.config.parse_config_string(
+    config, _, _ = yacron.config.parse_config_string(
         """
 jobs:
   - name: test
     command: echo "hello"
     schedule: "* * * * *"
-"""
+""",
+        "",
     )
     job_config = config[0]
     job = yacron.job.RunningJob(job_config, None)
@@ -573,7 +579,7 @@ def test_statsd(command):
         host, port = transport.get_extra_info("sockname")
         print("Listening UDP on %s:%s" % (host, port))
 
-        config, _ = yacron.config.parse_config_string(
+        config, _, _ = yacron.config.parse_config_string(
             """
 jobs:
   - name: test
@@ -585,7 +591,8 @@ jobs:
       prefix: the.prefix
 """.format(
                 port=port, command=command
-            )
+            ),
+            "",
         )
         job_config = config[0]
 

@@ -1,0 +1,10 @@
+include:
+  - test_included_child.yaml
+
+jobs:
+  - name: test-03
+    command: |
+      sleep 10
+      echo "all done."
+    schedule:
+      minute: "*/5"

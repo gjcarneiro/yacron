@@ -26,6 +26,7 @@ from crontab import CronTab
 
 logger = logging.getLogger("yacron.config")
 WebConfig = NewType("WebConfig", Dict[str, Any])
+JobDefaults = NewType("JobDefaults", Dict[str, Any])
 
 
 class ConfigError(Exception):
@@ -215,6 +216,7 @@ CONFIG_SCHEMA = EmptyDict() | Map(
         Opt("defaults"): Map(_job_defaults_common),
         Opt("jobs"): Seq(Map(_job_schema_dict)),
         Opt("web"): Map({"listen": Seq(Str())}),
+        Opt("include"): Seq(Str()),
     }
 )
 
@@ -339,12 +341,7 @@ class JobConfig:
                 )
 
 
-def parse_config_file(
-    path: str,
-) -> Tuple[List[JobConfig], Optional[WebConfig]]:
-    with open(path, "rt", encoding="utf-8") as stream:
-        data = stream.read()
-    return parse_config_string(data, path)
+import os.path
 
 
 def parse_environment_file(path: str) -> Dict[str, str]:
@@ -382,21 +379,41 @@ def parse_environment_file(path: str) -> Dict[str, str]:
 
 
 def parse_config_string(
-    data: str, path: Optional[str] = None
-) -> Tuple[List[JobConfig], Optional[WebConfig]]:
+    data: str, path: str
+) -> Tuple[List[JobConfig], Optional[WebConfig], JobDefaults]:
     try:
         doc = strictyaml.load(data, CONFIG_SCHEMA, label=path).data
     except YAMLError as ex:
         raise ConfigError(str(ex))
 
-    defaults = doc.get("defaults", {})
+    inc_defaults_merged: dict = {}
     jobs = []
-    for config_job in doc.get("jobs", []):
-        job_dict = dict(mergedicts(DEFAULT_CONFIG, defaults))
-        job_dict = dict(mergedicts(job_dict, config_job))
-        jobs.append(JobConfig(job_dict))
     webconf = WebConfig(doc["web"]) if "web" in doc else None
-    return jobs, webconf
+    for include in doc.get("include", ()):
+        inc_path = os.path.join(os.path.dirname(path), include)
+        inc_jobs, inc_webconf, inc_defaults = parse_config_file(inc_path)
+        inc_defaults_merged = dict(
+            mergedicts(inc_defaults_merged, inc_defaults)
+        )
+        jobs.extend(inc_jobs)
+        if inc_webconf:
+            if webconf:
+                raise ConfigError("multiple web config")
+            webconf = inc_webconf
+    defaults = dict(mergedicts(DEFAULT_CONFIG, inc_defaults_merged))
+    defaults = dict(mergedicts(defaults, doc.get("defaults", {})))
+    for config_job in doc.get("jobs", []):
+        job_dict = dict(mergedicts(defaults, config_job))
+        jobs.append(JobConfig(job_dict))
+    return jobs, webconf, JobDefaults(defaults)
+
+
+def parse_config_file(
+    path: str,
+) -> Tuple[List[JobConfig], Optional[WebConfig], JobDefaults]:
+    with open(path, "rt", encoding="utf-8") as stream:
+        data = stream.read()
+    return parse_config_string(data, path)
 
 
 def parse_config(
@@ -408,10 +425,12 @@ def parse_config(
     web_config_source_fname = None
     if os.path.isdir(config_arg):
         for direntry in os.scandir(config_arg):
-            _, ext = os.path.splitext(direntry.name)
+            base, ext = os.path.splitext(direntry.name)
+            if base[0] in {"_", "."}:
+                continue
             if ext in {".yml", ".yaml"}:
                 try:
-                    config, webconf = parse_config_file(direntry.path)
+                    config, webconf, _ = parse_config_file(direntry.path)
                 except ConfigError as err:
                     config_errors[direntry.path] = str(err)
                 except OSError as ex:
@@ -431,7 +450,7 @@ def parse_config(
                             )
     else:
         try:
-            config, web_config = parse_config_file(config_arg)
+            config, web_config, _ = parse_config_file(config_arg)
         except OSError as ex:
             config_errors[config_arg] = str(ex)
         else:

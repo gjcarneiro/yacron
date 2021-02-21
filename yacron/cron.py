@@ -86,7 +86,7 @@ class Cron:
             self.update_config()
         if config_yaml is not None:
             # config_yaml is for unit testing
-            config, _ = parse_config_string(config_yaml)
+            config, _, _ = parse_config_string(config_yaml, "")
             self.cron_jobs = OrderedDict((job.name, job) for job in config)
 
         self._wait_for_running_jobs_task = None  # type: Optional[asyncio.Task]
