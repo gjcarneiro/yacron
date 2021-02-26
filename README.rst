@@ -173,6 +173,22 @@ You can ask for environment variables to be defined for command execution:
           - key: PATH
             value: /bin:/usr/bin
 
+You can also provide an environment file to define environments for command execution:
+
+.. code-block:: yaml
+
+    jobs:
+      - name: test-01
+        command: echo "foobar"
+        shell: /bin/bash
+        schedule: "*/5 * * * *"
+        env_file: .env
+
+The env file must be a list of ``KEY=VALUE`` pairs. Empty lines and lines starting with ``#`` will be ignored.
+
+Variables declared in the ``environment`` options will override those found in the ``env_file``.
+
+
 Specifying defaults
 +++++++++++++++++++
 
