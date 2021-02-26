@@ -186,7 +186,7 @@ You can also provide an environment file to define environments for command exec
 
 The env file must be a list of ``KEY=VALUE`` pairs. Empty lines and lines starting with ``#`` will be ignored.
 
-Variables declared in the ``environment`` options will override those found in the ``env_file``.
+Variables declared in the ``environment`` option will override those found in the ``env_file``.
 
 
 Specifying defaults
