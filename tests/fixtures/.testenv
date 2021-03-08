@@ -1,0 +1,7 @@
+# check empty line and trailing spaces
+
+  VAR_OVERRIDE=ENV_FILE
+# ensures spaces do not matter
+VAR_ENV_FILE = ENV_FILE
+# ensures multiple = do not matter
+VAR_TEST_EQUAL_SIGN=ENV_FILE===

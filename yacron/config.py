@@ -273,7 +273,7 @@ class JobConfig:
             try:
                 self.timezone = pytz.timezone(config["timezone"])
             except pytz.UnknownTimeZoneError as err:
-                raise ConfigError("uknown timezone: " + str(err))
+                raise ConfigError("unknown timezone: " + str(err))
         elif self.utc:
             self.timezone = datetime.timezone.utc
 
@@ -284,10 +284,23 @@ class JobConfig:
 
         self.env_file = config.pop("env_file")
         self.environment = config.pop("environment")
-        try:
-            self.__parse_environs()
-        except OSError as e:
-            raise ConfigError("Could not load env_file: {}".format(e))
+        if self.env_file is not None:
+            try:
+                file_environs = parse_environment_file(self.env_file)
+            except OSError as e:
+                raise ConfigError("Could not load env_file: {}".format(e))
+            else:
+                # unpack variables in dictionaries
+                config_environs = {
+                    env["key"]: env["value"] for env in self.environment
+                }
+                # update file values with config ones
+                file_environs.update(config_environs)
+                # replace environment
+                self.environment = [
+                    {"key": key, "value": value}
+                    for key, value in file_environs.items()
+                ]
 
         self.executionTimeout = config.pop("executionTimeout")
         self.killTimeout = config.pop("killTimeout")
@@ -325,44 +338,6 @@ class JobConfig:
                     "but yacron is not running as superuser".format(self.name)
                 )
 
-    def __parse_environs(self):
-        """
-        Parse env_file and environments configuration parameters.
-
-        Opens `env_file` and loads variables, then merges them with the `environment` ones.
-        The latter will replace the former if duplicated.
-        """
-        # a temporary dictionary to prevent duplicated keys.
-        # why are you using a list?
-        environ: Dict[str, str] = {}
-
-        # if `env_file` is specified, load the file contents
-        if self.env_file is not None:
-            with open(self.env_file, 'r') as env_file:
-                file_environs = env_file.readlines()
-
-            # parse each line by stripping whitespaces and trailing newlines
-            # ignores empty lines and comments
-            # raises ConfigError if a key-value pair is not present
-            # you may want to use the `dotenv` library to do the job
-            for line in file_environs:
-                line = line.strip(' ').rstrip('\n')
-                if line.startswith('#') or not line:
-                    continue
-                if line.find('=') == -1:
-                    raise ConfigError("Invalid line in env_file: '{}'".format(line))
-                key, value = line.split('=', 1)
-                key = key.strip(' ')
-                value = value.strip(' ')
-                environ[key] = value
-
-        # load `environment` config as dictionary
-        config_environs = {env['key']: env['value'] for env in self.environment}
-        # update environs dict with those variables (this overrides already existing ones)
-        environ.update(config_environs)
-        # make a list of dicts again for compatibility
-        self.environment = [{'key': key, 'value': value} for key, value in environ.items()]
-
 
 def parse_config_file(
     path: str,
@@ -370,6 +345,39 @@ def parse_config_file(
     with open(path, "rt", encoding="utf-8") as stream:
         data = stream.read()
     return parse_config_string(data, path)
+
+
+def parse_environment_file(path: str) -> Dict[str, str]:
+    """
+    Parse environment variables from file.
+
+    Handles comments (lines starting with ``#``) and blank lines.
+    Variables must be specified in ``VARIABLE_NAME=CONTENT`` format.
+
+    :param path: Path to the environment file.
+    :raise ConfigError: If a line in the file is not parsable (the ``=`` key-value separation character is missing).
+    :raise OSError: If an error occurred while opening the file at ``path``.
+    :return: key-value map of environment variables.
+    """
+    environ: Dict[str, str] = {}
+
+    with open(path, "r") as env_file:
+        # file parsing
+        # you may want to use the `dotenv` library to do the job
+        for line in env_file.readlines():
+            line = line.strip(" ").rstrip("\n")
+            if line.startswith("#") or not line:
+                continue
+            if "=" not in line:
+                raise ConfigError(
+                    "Invalid line in env_file: '{}'".format(line)
+                )
+            key, value = line.split("=", 1)
+            key = key.strip(" ")
+            value = value.strip(" ")
+            environ[key] = value
+
+    return environ
 
 
 def parse_config_string(

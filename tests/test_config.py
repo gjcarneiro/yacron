@@ -1,4 +1,7 @@
+import pytest
+
 from yacron import config
+from yacron.config import ConfigError
 
 
 def test_mergedicts():
@@ -200,3 +203,102 @@ def test_empty_config1():
     jobs, web_config = config.parse_config_string("")
     assert len(jobs) == 0
     assert web_config is None
+
+
+def test_environ_file():
+    jobs, _ = config.parse_config_string(
+        """
+defaults:
+  shell: /bin/bash
+
+jobs:
+  - name: test
+    command: |
+      echo VAR_STD: $VAR_STD
+      echo VAR_ENV_FILE: $VAR_ENV_FILE
+      echo VAR_OVERRIDE: $VAR_OVERRIDE
+    schedule:
+      minute: "*"
+    captureStderr: true
+    environment:
+        - key: VAR_STD
+          value: STD
+        - key: VAR_OVERRIDE
+          value: STD
+    env_file: tests/fixtures/.testenv
+"""
+    )
+    job = jobs[0]
+
+    # NOTE: the file format implicitly verifies that the parsing is being done correctly on these fronts:
+    # * comments
+    # * empty lines
+    # * trailing spaces
+    # * spaces around the separation character
+    # * other ``=`` in the value
+
+    dict_environment = {env["key"]: env["value"] for env in job.environment}
+    # check config-only
+    assert dict_environment["VAR_STD"] == "STD"
+    # check file-only variable
+    assert dict_environment["VAR_ENV_FILE"] == "ENV_FILE"
+    # check config variables override env_file's
+    assert dict_environment["VAR_OVERRIDE"] == "STD"
+    # check the multiple ``=``
+    assert dict_environment["VAR_TEST_EQUAL_SIGN"] == "ENV_FILE==="
+
+
+def test_invalid_environ_file():
+    # invalid file (no key-value)
+    with pytest.raises(ConfigError) as exc:
+        jobs, _ = config.parse_config_string(
+            """
+    defaults:
+      shell: /bin/bash
+
+    jobs:
+      - name: test
+        command: |
+          echo VAR_STD: $VAR_STD
+          echo VAR_ENV_FILE: $VAR_ENV_FILE
+          echo VAR_OVERRIDE: $VAR_OVERRIDE
+        schedule:
+          minute: "*"
+        captureStderr: true
+        environment:
+            - key: VAR_STD
+              value: STD
+            - key: VAR_OVERRIDE
+              value: STD
+        env_file: tests/fixtures/.testenv-invalid
+    """
+        )
+
+    assert "env_file" in str(exc.value)
+
+    # non-existent file should raise ConfigError, not OSError
+    with pytest.raises(ConfigError) as exc:
+        jobs, _ = config.parse_config_string(
+            """
+    defaults:
+      shell: /bin/bash
+
+    jobs:
+      - name: test
+        command: |
+          echo VAR_STD: $VAR_STD
+          echo VAR_ENV_FILE: $VAR_ENV_FILE
+          echo VAR_OVERRIDE: $VAR_OVERRIDE
+        schedule:
+          minute: "*"
+        captureStderr: true
+        environment:
+            - key: VAR_STD
+              value: STD
+            - key: VAR_OVERRIDE
+              value: STD
+        env_file: .testenv-nonexistent
+    """
+        )
+
+    assert "env_file" in str(exc.value)
