@@ -104,6 +104,7 @@ DEFAULT_CONFIG = {
     "onPermanentFailure": {"report": _REPORT_DEFAULTS},
     "onSuccess": {"report": _REPORT_DEFAULTS},
     "environment": [],
+    "env_file": None,
     "executionTimeout": None,
     "killTimeout": 30,
     "statsd": None,
@@ -182,6 +183,7 @@ _job_defaults_common = {
     Opt("onPermanentFailure"): Map({Opt("report"): _report_schema}),
     Opt("onSuccess"): Map({Opt("report"): _report_schema}),
     Opt("environment"): Seq(Map({"key": Str(), "value": Str()})),
+    Opt("env_file"): Str(),
     Opt("executionTimeout"): Float(),
     Opt("killTimeout"): Float(),
     Opt("statsd"): Map({"prefix": Str(), "host": Str(), "port": Int()}),
@@ -271,7 +273,7 @@ class JobConfig:
             try:
                 self.timezone = pytz.timezone(config["timezone"])
             except pytz.UnknownTimeZoneError as err:
-                raise ConfigError("uknown timezone: " + str(err))
+                raise ConfigError("unknown timezone: " + str(err))
         elif self.utc:
             self.timezone = datetime.timezone.utc
 
@@ -279,7 +281,27 @@ class JobConfig:
         self.onFailure = config.pop("onFailure")
         self.onPermanentFailure = config.pop("onPermanentFailure")
         self.onSuccess = config.pop("onSuccess")
+
+        self.env_file = config.pop("env_file")
         self.environment = config.pop("environment")
+        if self.env_file is not None:
+            try:
+                file_environs = parse_environment_file(self.env_file)
+            except OSError as e:
+                raise ConfigError("Could not load env_file: {}".format(e))
+            else:
+                # unpack variables in dictionaries
+                config_environs = {
+                    env["key"]: env["value"] for env in self.environment
+                }
+                # update file values with config ones
+                file_environs.update(config_environs)
+                # replace environment
+                self.environment = [
+                    {"key": key, "value": value}
+                    for key, value in file_environs.items()
+                ]
+
         self.executionTimeout = config.pop("executionTimeout")
         self.killTimeout = config.pop("killTimeout")
         self.statsd = config.pop("statsd")
@@ -323,6 +345,39 @@ def parse_config_file(
     with open(path, "rt", encoding="utf-8") as stream:
         data = stream.read()
     return parse_config_string(data, path)
+
+
+def parse_environment_file(path: str) -> Dict[str, str]:
+    """
+    Parse environment variables from file.
+
+    Handles comments (lines starting with ``#``) and blank lines.
+    Variables must be specified in ``VARIABLE_NAME=CONTENT`` format.
+
+    :param path: Path to the environment file.
+    :raise ConfigError: If a line in the file is not parsable (the ``=`` key-value separation character is missing).
+    :raise OSError: If an error occurred while opening the file at ``path``.
+    :return: key-value map of environment variables.
+    """
+    environ: Dict[str, str] = {}
+
+    with open(path, "r") as env_file:
+        # file parsing
+        # you may want to use the `dotenv` library to do the job
+        for line in env_file.readlines():
+            line = line.strip(" ").rstrip("\n")
+            if line.startswith("#") or not line:
+                continue
+            if "=" not in line:
+                raise ConfigError(
+                    "Invalid line in env_file: '{}'".format(line)
+                )
+            key, value = line.split("=", 1)
+            key = key.strip(" ")
+            value = value.strip(" ")
+            environ[key] = value
+
+    return environ
 
 
 def parse_config_string(
