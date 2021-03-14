@@ -355,7 +355,8 @@ def parse_environment_file(path: str) -> Dict[str, str]:
     Variables must be specified in ``VARIABLE_NAME=CONTENT`` format.
 
     :param path: Path to the environment file.
-    :raise ConfigError: If a line in the file is not parsable (the ``=`` key-value separation character is missing).
+    :raise ConfigError: If a line in the file is not parsable
+        (the ``=`` key-value separation character is missing).
     :raise OSError: If an error occurred while opening the file at ``path``.
     :return: key-value map of environment variables.
     """

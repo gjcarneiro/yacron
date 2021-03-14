@@ -230,7 +230,8 @@ jobs:
     )
     job = jobs[0]
 
-    # NOTE: the file format implicitly verifies that the parsing is being done correctly on these fronts:
+    # NOTE: the file format implicitly verifies that the parsing is being
+    # done correctly on these fronts:
     # * comments
     # * empty lines
     # * trailing spaces
