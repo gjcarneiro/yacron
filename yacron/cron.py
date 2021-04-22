@@ -179,7 +179,7 @@ class Cron:
                         ),
                     }
                 )
-        if request.headers["Accept"] == "application/json":
+        if request.headers.get("Accept") == "application/json":
             return web.json_response(out)
         else:
             lines = []
