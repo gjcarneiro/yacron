@@ -2,6 +2,14 @@
 History
 =======
 
+0.12.0 (2021-04-22)
+-------------------
+
+* web: don't crash when receiving a web request without Accept header (#45)
+* add env_file configuration option (Alessandro Romani, #43)
+* email: add missing Date header (#39)
+
+
 0.11.2 (2020-11-29)
 -------------------
 
