@@ -44,7 +44,7 @@ Installation
 Install using pip
 +++++++++++++++++
 
-yacron requires Python >= 3.5.3.  It is advisable to install it in a Python
+yacron requires Python >= 3.6 (for systems with older Python, use the binary instead).  It is advisable to install it in a Python
 virtual environment, for example:
 
 .. code-block:: shell
