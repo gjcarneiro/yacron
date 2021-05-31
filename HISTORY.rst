@@ -2,6 +2,12 @@
 History
 =======
 
+0.12.2 (2021-05-31)
+-------------------
+
+* constrain ruamel.yaml to version 0.17.4 or below, later versions are buggy
+
+
 0.12.1 (2021-05-30)
 -------------------
 
