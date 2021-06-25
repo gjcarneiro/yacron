@@ -188,6 +188,49 @@ class MailReporter(Reporter):
 
         await smtp.send_message(message)
 
+class ShellReporter:
+    async def report(
+        self, success: bool, job: "RunningJob", config: Dict[str, Any]
+    ) -> None:
+        shell_config = config["shell"]
+
+        if shell_config['command'] is None:
+            return
+
+        if isinstance(shell_config['command'], list):
+            create = asyncio.create_subprocess_exec  # type: Any
+            cmd = shell_config['command']
+        else:
+            if shell_config['shell']:
+                create = asyncio.create_subprocess_exec
+                cmd = [shell_config['shell'], "-c", shell_config['command']]
+            else:
+                create = asyncio.create_subprocess_shell
+                cmd = [shell_config['command']]
+
+        # pass the necessary information as env variables
+        env = {
+            **os.environ,
+            "fail_reason": job.fail_reason if job.fail_reason != None else "",
+            "failed": "1" if job.failed else "0",
+            "retcode": str(job.retcode),
+            "stderr": job.stderr if job.stderr != None else "",
+            "stdout": job.stdout if job.stdout != None else "",
+        }
+
+        try:
+            proc = await create(*cmd, env=env)
+        except subprocess.SubprocessError:
+            logger.exception(
+                "Error executing shell reporter of job %s", job.config.name
+            )
+            return
+
+        retcode = await proc.wait()
+        if retcode != 0:
+            logger.exception(
+                "Error executing shell reporter of job %s with return code %s", job.config.name, retcode
+            )
 
 class JobRetryState:
     def __init__(
@@ -208,7 +251,7 @@ class JobRetryState:
 
 
 class RunningJob:
-    REPORTERS = [SentryReporter(), MailReporter()]  # type: List[Reporter]
+    REPORTERS = [SentryReporter(), MailReporter(), ShellReporter()]  # type: List[Reporter]
 
     def __init__(
         self, config: JobConfig, retry_state: Optional[JobRetryState]
