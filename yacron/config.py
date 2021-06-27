@@ -20,7 +20,7 @@ from strictyaml import (
     Str,
     MapPattern,
 )
-from ruamel.yaml.error import YAMLError
+from strictyaml.ruamel.error import YAMLError
 
 from crontab import CronTab
 
