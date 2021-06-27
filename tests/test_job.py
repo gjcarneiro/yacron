@@ -4,6 +4,8 @@ import asyncio
 import pytest
 import aiosmtplib
 from unittest.mock import Mock, patch
+import tempfile
+import os
 
 
 @pytest.mark.parametrize(
@@ -373,6 +375,52 @@ def test_report_sentry(
         "extra": extra,
     }
 
+
+def test_report_shell():
+    stdout, stderr = None, None
+    with tempfile.TemporaryDirectory() as tmp:
+        out_file_path = os.path.join(tmp, 'unit_test_file')
+
+        config, _ = yacron.config.parse_config_string(
+            f"""
+jobs:
+  - name: test
+    command: echo "foobar" && exit 123
+    schedule: "* * * * *"
+    onFailure:
+      report:
+        shell:
+            command: echo "Error code $YACRON_RETCODE"  >> {out_file_path}
+    """
+        )
+        job_config = config[0]
+
+        job = Mock(
+            config=job_config,
+            stdout=stdout,
+            stderr=stderr,
+            template_vars={
+                "name": job_config.name,
+                "success": False,
+                "stdout": stdout,
+                "stderr": stderr,
+            },
+            retcode=123,
+            fail_reason="",
+            failed=True
+        )
+
+        shell_reporter = yacron.job.ShellReporter()
+        loop = asyncio.get_event_loop()
+
+        loop.run_until_complete(
+            shell_reporter.report(False, job, job_config.onFailure["report"])
+        )
+
+        assert os.path.isfile(out_file_path)
+        with open(out_file_path, 'r') as file:
+            data = file.read()
+        assert data.strip() == "Error code 123"
 
 @pytest.mark.parametrize(
     "shell, command, expected_type, expected_args",

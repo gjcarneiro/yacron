@@ -211,11 +211,11 @@ class ShellReporter:
         # pass the necessary information as env variables
         env = {
             **os.environ,
-            "fail_reason": job.fail_reason if job.fail_reason != None else "",
-            "failed": "1" if job.failed else "0",
-            "retcode": str(job.retcode),
-            "stderr": job.stderr if job.stderr != None else "",
-            "stdout": job.stdout if job.stdout != None else "",
+            "YACRON_FAIL_REASON": job.fail_reason if job.fail_reason is not None else "",
+            "YACRON_FAILED": "1" if job.failed else "0",
+            "YACRON_RETCODE": str(job.retcode),
+            "YACRON_STDERR": job.stderr if job.stderr is not None else "",
+            "YACRON_STDOUT": job.stdout if job.stdout is not None else "",
         }
 
         try:
