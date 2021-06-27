@@ -2,6 +2,11 @@
 History
 =======
 
+unreleased
+
+* Add ability for one config file to include another one #38
+
+
 0.12.2 (2021-05-31)
 -------------------
 
