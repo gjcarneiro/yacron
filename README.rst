@@ -220,7 +220,7 @@ Reporting
 +++++++++
 
 Yacron has builtin support for reporting jobs failure (more on that below) by
-email and Sentry (additional reporting methods might be added in the future):
+email, Sentry and shell command (additional reporting methods might be added in the future):
 
 .. code-block:: yaml
 
@@ -331,6 +331,29 @@ Example:
             {{stderr}}
             (exit code: {{exit_code}})
 
+
+The shell reporter executes a user given shell command in the specified shell.
+It passes all environment variables from the python executable and specifies
+some additional ones to inform about the state of the job:
+* YACRON_FAIL_REASON (str)
+* YACRON_FAILED ("1" or "0")
+* YACRON_RETCODE (str)
+* YACRON_STDERR (str)
+* YACRON_STDOUT (str)
+
+A simple example configuration:
+
+.. code-block:: yaml
+
+  - name: test-01
+    command: echo "foobar" && exit 123
+    shell: /bin/bash
+    schedule: "* * * * *"
+    onFailure:
+      report:
+        shell:
+          shell: /bin/bash
+          command: echo "Error code $YACRON_RETCODE"
 
 Metrics
 +++++++++

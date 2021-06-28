@@ -76,6 +76,10 @@ _REPORT_DEFAULTS = {
         "username": None,
         "password": {"value": None, "fromFile": None, "fromEnvVar": None},
     },
+    "shell" : {
+        "shell": "/bin/sh",
+        "command": None,
+    },
 }
 
 
@@ -147,6 +151,12 @@ _report_schema = Map(
                 ),
                 Opt("tls"): Bool(),
                 Opt("starttls"): Bool(),
+            }
+        ),
+        Opt("shell"): Map(
+            {
+                Opt("shell"): Str(),
+                "command": Str() | Seq(Str()),
             }
         ),
     }
