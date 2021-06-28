@@ -218,6 +218,7 @@ class ShellReporter:
             "YACRON_STDOUT": job.stdout if job.stdout is not None else "",
         }
 
+        logger.debug("Executing shell report cmd: %s", cmd)
         try:
             proc = await create(*cmd, env=env)
         except subprocess.SubprocessError:
