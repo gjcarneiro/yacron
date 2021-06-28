@@ -261,6 +261,9 @@ email, Sentry and shell command (additional reporting methods might be added in 
             # fromEnvVar: MAIL_PASSWORD
           tls: false  # set to true to enable TLS
           starttls: false  # set to true to enable StartTLS
+        shell:
+          shell: /bin/bash
+          command: ...
 
 Here, the ``onFailure`` object indicates that what to do when a job failure
 is detected.  In this case we ask for it to be reported both to sentry and by
@@ -332,9 +335,11 @@ Example:
             (exit code: {{exit_code}})
 
 
-The shell reporter executes a user given shell command in the specified shell.
-It passes all environment variables from the python executable and specifies
-some additional ones to inform about the state of the job:
+The shell reporter (since yacron 0.13) executes a user given shell command in
+the specified shell. It passes all environment variables from the python
+executable and specifies some additional ones to inform about the state of the
+job:
+
 * YACRON_FAIL_REASON (str)
 * YACRON_FAILED ("1" or "0")
 * YACRON_RETCODE (str)
