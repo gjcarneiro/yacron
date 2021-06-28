@@ -121,6 +121,7 @@ jobs:
                 "sentry": (
                     config.DEFAULT_CONFIG["onFailure"]["report"]["sentry"]
                 ),
+                "shell": config.DEFAULT_CONFIG["onFailure"]["report"]["shell"],
             },
             "retry": {
                 "backoffMultiplier": 2,
@@ -192,6 +193,7 @@ jobs:
                 "sentry": (
                     config.DEFAULT_CONFIG["onFailure"]["report"]["sentry"]
                 ),
+                "shell": config.DEFAULT_CONFIG["onFailure"]["report"]["shell"],
             },
             "retry": {
                 "backoffMultiplier": 2,

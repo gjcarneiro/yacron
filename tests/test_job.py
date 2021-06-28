@@ -380,9 +380,9 @@ def test_report_sentry(
 def test_report_shell():
     stdout, stderr = None, None
     with tempfile.TemporaryDirectory() as tmp:
-        out_file_path = os.path.join(tmp, 'unit_test_file')
+        out_file_path = os.path.join(tmp, "unit_test_file")
 
-        config, _ = yacron.config.parse_config_string(
+        config, _, _ = yacron.config.parse_config_string(
             f"""
 jobs:
   - name: test
@@ -392,7 +392,8 @@ jobs:
       report:
         shell:
             command: echo "Error code $YACRON_RETCODE"  >> {out_file_path}
-    """
+    """,
+            "",
         )
         job_config = config[0]
 
@@ -408,7 +409,7 @@ jobs:
             },
             retcode=123,
             fail_reason="",
-            failed=True
+            failed=True,
         )
 
         shell_reporter = yacron.job.ShellReporter()
@@ -419,9 +420,10 @@ jobs:
         )
 
         assert os.path.isfile(out_file_path)
-        with open(out_file_path, 'r') as file:
+        with open(out_file_path, "r") as file:
             data = file.read()
         assert data.strip() == "Error code 123"
+
 
 @pytest.mark.parametrize(
     "shell, command, expected_type, expected_args",
