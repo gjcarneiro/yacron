@@ -2,9 +2,10 @@
 History
 =======
 
-unreleased
+0.13.0 (2021-06-28)
 
 * Add ability for one config file to include another one #38
+* Add shell command reporting ability (Hannes Hergeth, #50)
 
 
 0.12.2 (2021-05-31)
