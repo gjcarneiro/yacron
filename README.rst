@@ -663,7 +663,7 @@ scheduled to run yet, for example for testing:
 Includes
 ++++++++
 
-(new in version unreleased)
+(new in version 0.13)
 
 You may have a use case where it's convenient to have multiple config files,
 and choose at runtime which one to use.  In that case, it might be useful if
