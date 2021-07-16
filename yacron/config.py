@@ -76,7 +76,7 @@ _REPORT_DEFAULTS = {
         "username": None,
         "password": {"value": None, "fromFile": None, "fromEnvVar": None},
     },
-    "shell" : {
+    "shell": {
         "shell": "/bin/sh",
         "command": None,
     },
@@ -349,9 +349,6 @@ class JobConfig:
                     "Job {} wants to change user or group, "
                     "but yacron is not running as superuser".format(self.name)
                 )
-
-
-import os.path
 
 
 def parse_environment_file(path: str) -> Dict[str, str]:

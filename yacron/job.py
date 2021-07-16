@@ -53,7 +53,12 @@ class StreamReader:
             line = (await stream.readline()).decode("utf-8")
             if not line:
                 return
-            sys.stdout.write(prefix + line)
+            out_line = prefix + line
+            try:
+                sys.stdout.write(out_line)
+            except UnicodeEncodeError:
+                out_line.encode("ascii", "replace").decode("ascii")
+                sys.stdout.write(out_line)
             sys.stdout.flush()
             if self.save_limit > 0:
                 if len(self.save_top) < limit_top:
@@ -188,30 +193,33 @@ class MailReporter(Reporter):
 
         await smtp.send_message(message)
 
-class ShellReporter:
+
+class ShellReporter(Reporter):
     async def report(
         self, success: bool, job: "RunningJob", config: Dict[str, Any]
     ) -> None:
         shell_config = config["shell"]
 
-        if shell_config['command'] is None:
+        if shell_config["command"] is None:
             return
 
-        if isinstance(shell_config['command'], list):
+        if isinstance(shell_config["command"], list):
             create = asyncio.create_subprocess_exec  # type: Any
-            cmd = shell_config['command']
+            cmd = shell_config["command"]
         else:
-            if shell_config['shell']:
+            if shell_config["shell"]:
                 create = asyncio.create_subprocess_exec
-                cmd = [shell_config['shell'], "-c", shell_config['command']]
+                cmd = [shell_config["shell"], "-c", shell_config["command"]]
             else:
                 create = asyncio.create_subprocess_shell
-                cmd = [shell_config['command']]
+                cmd = [shell_config["command"]]
 
         # pass the necessary information as env variables
         env = {
             **os.environ,
-            "YACRON_FAIL_REASON": job.fail_reason if job.fail_reason is not None else "",
+            "YACRON_FAIL_REASON": job.fail_reason
+            if job.fail_reason is not None
+            else "",
             "YACRON_FAILED": "1" if job.failed else "0",
             "YACRON_RETCODE": str(job.retcode),
             "YACRON_STDERR": job.stderr if job.stderr is not None else "",
@@ -230,8 +238,11 @@ class ShellReporter:
         retcode = await proc.wait()
         if retcode != 0:
             logger.exception(
-                "Error executing shell reporter of job %s with return code %s", job.config.name, retcode
+                "Error executing shell reporter of job %s with return code %s",
+                job.config.name,
+                retcode,
             )
+
 
 class JobRetryState:
     def __init__(
@@ -252,7 +263,11 @@ class JobRetryState:
 
 
 class RunningJob:
-    REPORTERS = [SentryReporter(), MailReporter(), ShellReporter()]  # type: List[Reporter]
+    REPORTERS = [
+        SentryReporter(),
+        MailReporter(),
+        ShellReporter(),
+    ]  # type: List[Reporter]
 
     def __init__(
         self, config: JobConfig, retry_state: Optional[JobRetryState]
