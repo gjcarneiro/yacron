@@ -57,7 +57,7 @@ class StreamReader:
             try:
                 sys.stdout.write(out_line)
             except UnicodeEncodeError:
-                out_line.encode("ascii", "replace").decode("ascii")
+                out_line = out_line.encode("ascii", "replace").decode("ascii")
                 sys.stdout.write(out_line)
             sys.stdout.flush()
             if self.save_limit > 0:
