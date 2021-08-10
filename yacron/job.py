@@ -133,7 +133,7 @@ class SentryReporter(Reporter):
             extra,
             body,
         )
-        with sentry_sdk.configure_scope() as scope:
+        with sentry_sdk.push_scope() as scope:
             for key, val in extra.items():
                 scope.set_extra(key, val)
             scope.fingerprint = fingerprint
