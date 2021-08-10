@@ -24,7 +24,7 @@ pluggy==0.13.1
 py==1.10.0
 pycodestyle==2.7.0
 pyflakes==2.3.1
-pyinstaller==4.1
+pyinstaller==4.5.1
 pyinstaller-hooks-contrib==2021.2
 pyparsing==2.4.7
 pytest==6.2.4

@@ -55,7 +55,7 @@ class StreamReader:
                 return
             out_line = prefix + line
             try:
-                sys.stdout.write(out_line)
+                sys.stdout.buffer.write(out_line.encode())
             except UnicodeEncodeError:
                 out_line = out_line.encode("ascii", "replace").decode("ascii")
                 sys.stdout.write(out_line)
@@ -337,10 +337,15 @@ class RunningJob:
             )
 
         try:
-            self.proc = await create(*cmd, **kwargs)
-        except subprocess.SubprocessError:
+            self.proc = await create(*[c.encode() for c in cmd], **kwargs)
+        except (subprocess.SubprocessError, UnicodeEncodeError):
             logger.exception(
-                "Error launching subprocess of job %s", self.config.name
+                "Error launching subprocess of job %s, cmd=%r, kwargs=%s "
+                "(system encoding: %s)",
+                self.config.name,
+                cmd,
+                kwargs,
+                sys.getdefaultencoding(),
             )
             return
 
