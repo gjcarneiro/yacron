@@ -2,6 +2,11 @@
 History
 =======
 
+0.13.1 (2021-08-10)
+-------------------
+
+* unicode fixes for the exe binary version
+
 0.13.0 (2021-06-28)
 
 * Add ability for one config file to include another one #38
