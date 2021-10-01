@@ -63,6 +63,7 @@ _REPORT_DEFAULTS = {
         "dsn": {"value": None, "fromFile": None, "fromEnvVar": None},
         "body": DEFAULT_SUBJECT_TEMPLATE + "\n" + DEFAULT_BODY_TEMPLATE,
         "fingerprint": ["yacron", "{{ environment.HOSTNAME }}", "{{ name }}"],
+        "environment": None,
     },
     "mail": {
         "from": None,
@@ -131,6 +132,7 @@ _report_schema = Map(
                 Opt("level"): Str(),
                 Opt("extra"): MapPattern(Str(), Str() | Int() | Bool()),
                 Opt("body"): Str(),
+                Opt("environment"): Str(),
             }
         ),
         Opt("mail"): Map(

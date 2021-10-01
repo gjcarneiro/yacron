@@ -118,7 +118,10 @@ class SentryReporter(Reporter):
         for line in config["fingerprint"]:
             fingerprint.append(jinja2.Template(line).render(job.template_vars))
 
-        sentry_sdk.init(dsn=dsn)
+        kwargs = {}
+        if config.get("environment"):
+            kwargs["environment"] = config["environment"]
+        sentry_sdk.init(dsn=dsn, **kwargs)
         extra = {
             "job": job.config.name,
             "exit_code": job.retcode,

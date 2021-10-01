@@ -2,6 +2,12 @@
 History
 =======
 
+0.14.0 (???)
+------------
+
+* Sentry: allow specifying the environment option #53
+
+
 0.13.1 (2021-08-10)
 -------------------
 

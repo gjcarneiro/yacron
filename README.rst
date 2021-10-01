@@ -248,6 +248,7 @@ email, Sentry and shell command (additional reporting methods might be added in 
             foo: bar
             zbr: 123
           level: warning
+          environment: production
         mail:
           from: example@foo.com
           to: example@bar.com
