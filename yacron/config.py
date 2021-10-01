@@ -64,6 +64,7 @@ _REPORT_DEFAULTS = {
         "body": DEFAULT_SUBJECT_TEMPLATE + "\n" + DEFAULT_BODY_TEMPLATE,
         "fingerprint": ["yacron", "{{ environment.HOSTNAME }}", "{{ name }}"],
         "environment": None,
+        "maxStringLength": 8192,
     },
     "mail": {
         "from": None,
@@ -133,6 +134,7 @@ _report_schema = Map(
                 Opt("extra"): MapPattern(Str(), Str() | Int() | Bool()),
                 Opt("body"): Str(),
                 Opt("environment"): Str(),
+                Opt("maxStringLength"): Int(),
             }
         ),
         Opt("mail"): Map(

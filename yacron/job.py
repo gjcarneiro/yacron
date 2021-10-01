@@ -11,6 +11,7 @@ from typing import Any, Awaitable, Dict, List, Optional, Union, Tuple  # noqa
 import subprocess
 
 import sentry_sdk
+import sentry_sdk.utils
 
 import aiosmtplib
 import jinja2
@@ -119,6 +120,8 @@ class SentryReporter(Reporter):
             fingerprint.append(jinja2.Template(line).render(job.template_vars))
 
         kwargs = {}
+        if config.get("maxStringLength"):
+            sentry_sdk.utils.MAX_STRING_LENGTH = config["maxStringLength"]
         if config.get("environment"):
             kwargs["environment"] = config["environment"]
         sentry_sdk.init(dsn=dsn, **kwargs)
