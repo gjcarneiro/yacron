@@ -341,7 +341,11 @@ class RunningJob:
 
         try:
             self.proc = await create(*[c.encode() for c in cmd], **kwargs)
-        except (subprocess.SubprocessError, UnicodeEncodeError):
+        except (
+            subprocess.SubprocessError,
+            UnicodeEncodeError,
+            FileNotFoundError,
+        ):
             logger.exception(
                 "Error launching subprocess of job %s, cmd=%r, kwargs=%s "
                 "(system encoding: %s)",
