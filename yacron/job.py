@@ -185,8 +185,8 @@ class MailReporter(Reporter):
         message = EmailMessage()
         message.set_content(body)
         message["From"] = mail["from"]
-        message["To"] = mail["to"]
-        message["Subject"] = subject
+        message["To"] = mail["to"].strip()
+        message["Subject"] = subject.strip()
         message["Date"] = datetime.now(timezone.utc)
         smtp = aiosmtplib.SMTP(
             hostname=smtp_host, port=smtp_port, use_tls=mail["tls"]
