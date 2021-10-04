@@ -428,9 +428,9 @@ jobs:
 @pytest.mark.parametrize(
     "shell, command, expected_type, expected_args",
     [
-        ("", "Civ 6", "shell", ("Civ 6",)),
-        ("", ["echo", "hello"], "exec", ("echo", "hello")),
-        ("bash", 'echo "hello"', "exec", ("bash", "-c", 'echo "hello"')),
+        ("", "Civ 6", "shell", (b"Civ 6",)),
+        ("", ["echo", "hello"], "exec", (b"echo", b"hello")),
+        ("bash", 'echo "hello"', "exec", (b"bash", b"-c", b'echo "hello"')),
     ],
 )
 def test_job_run(monkeypatch, shell, command, expected_type, expected_args):
