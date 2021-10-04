@@ -2,10 +2,12 @@
 History
 =======
 
-0.14.0 (???)
+0.14.0 (2021-10-04)
 ------------
 
+* Sentry: increase the size of messages before getting truncated #54
 * Sentry: allow specifying the environment option #53
+* Minor fixes
 
 
 0.13.1 (2021-08-10)
