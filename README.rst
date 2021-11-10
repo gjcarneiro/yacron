@@ -361,6 +361,28 @@ A simple example configuration:
           shell: /bin/bash
           command: echo "Error code $YACRON_RETCODE"
 
+Since yacron 0.15, it is possible to send emails formatted as html, by  adding
+ the ``html: true`` property.  For example, here the standard output of a
+shell command is captured and interpreted as html and placed in the email
+message:
+
+.. code-block:: yaml
+
+  - name: test-01
+    command: echo "hello <b>world</b>"
+    schedule: "@reboot"
+    captureStdout: true
+    onSuccess:
+      report:
+        mail:
+          from: example@foo.com
+          to: example@bar.com, zzz@sleep.com
+          html: true
+          smtpHost: 127.0.0.1
+          smtpPort: 1025
+          subject: This is a cron job with html body
+
+
 Metrics
 +++++++++
 

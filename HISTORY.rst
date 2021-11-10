@@ -2,8 +2,14 @@
 History
 =======
 
+0.15.0 ()
+-------------------
+
+* Allow emails to be html formatted
+
+
 0.14.0 (2021-10-04)
-------------
+-------------------
 
 * Sentry: increase the size of messages before getting truncated #54
 * Sentry: allow specifying the environment option #53

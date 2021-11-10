@@ -73,6 +73,7 @@ _REPORT_DEFAULTS = {
         "smtpPort": 25,
         "tls": False,
         "starttls": False,
+        "html": False,
         "subject": DEFAULT_SUBJECT_TEMPLATE,
         "body": DEFAULT_BODY_TEMPLATE,
         "username": None,
@@ -155,6 +156,7 @@ _report_schema = Map(
                 ),
                 Opt("tls"): Bool(),
                 Opt("starttls"): Bool(),
+                Opt("html"): Bool(),
             }
         ),
         Opt("shell"): Map(

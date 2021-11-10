@@ -117,6 +117,7 @@ jobs:
                     },
                     "tls": False,
                     "starttls": False,
+                    "html": False,
                 },
                 "sentry": (
                     config.DEFAULT_CONFIG["onFailure"]["report"]["sentry"]
@@ -189,6 +190,7 @@ jobs:
                     },
                     "tls": False,
                     "starttls": False,
+                    "html": False,
                 },
                 "sentry": (
                     config.DEFAULT_CONFIG["onFailure"]["report"]["sentry"]

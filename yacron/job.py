@@ -183,11 +183,15 @@ class MailReporter(Reporter):
 
         logger.debug("smtp: host=%r, port=%r", smtp_host, smtp_port)
         message = EmailMessage()
-        message.set_content(body)
         message["From"] = mail["from"]
         message["To"] = mail["to"].strip()
         message["Subject"] = subject.strip()
         message["Date"] = datetime.now(timezone.utc)
+        if mail["html"]:
+            message.set_payload(body)
+            message.add_header('Content-Type','text/html')
+        else:
+            message.set_content(body)
         smtp = aiosmtplib.SMTP(
             hostname=smtp_host, port=smtp_port, use_tls=mail["tls"]
         )
