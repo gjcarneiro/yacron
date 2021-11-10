@@ -362,9 +362,8 @@ A simple example configuration:
           command: echo "Error code $YACRON_RETCODE"
 
 Since yacron 0.15, it is possible to send emails formatted as html, by  adding
- the ``html: true`` property.  For example, here the standard output of a
-shell command is captured and interpreted as html and placed in the email
-message:
+the ``html: true`` property.  For example, here the standard output of a shell
+command is captured and interpreted as html and placed in the email message\:
 
 .. code-block:: yaml
 
