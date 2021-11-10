@@ -2,10 +2,11 @@
 History
 =======
 
-0.15.0 ()
+0.15.0 (2021-11-10)
 -------------------
 
 * Allow emails to be html formatted
+* Fix an error when reading cmd output with huge lines (#56)
 
 
 0.14.0 (2021-10-04)
