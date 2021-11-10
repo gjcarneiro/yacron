@@ -67,6 +67,42 @@ jobs:
     assert (out, job.failed) == (output, expected_failure)
 
 
+def test_stream_reader_long_line():
+    loop = asyncio.get_event_loop()
+    fake_stream = asyncio.StreamReader()
+    reader = yacron.job.StreamReader(
+        "cronjob-1", "stderr", fake_stream, 500
+    )
+
+    config, _, _ = yacron.config.parse_config_string(
+        """
+jobs:
+  - name: test
+    command: foo
+    schedule: "* * * * *"
+    captureStderr: true
+""",
+        "",
+    )
+    job_config = config[0]
+    job = yacron.job.RunningJob(job_config, None)
+
+    async def producer(fake_stream):
+        fake_stream.feed_data(b"one line\n")
+        fake_stream.feed_data(b"long line:" + b"1234567890" * 10_000)
+        fake_stream.feed_data(b"\n")
+        fake_stream.feed_data(b"another line\n")
+        fake_stream.feed_eof()
+
+    job._stderr_reader = reader
+    job.retcode = 0
+    loop.run_until_complete(
+        asyncio.gather(producer(fake_stream), job._read_job_streams())
+    )
+    out = job.stderr
+    assert out == "one line\nanother line\n"
+
+
 A_JOB = """
 jobs:
   - name: test

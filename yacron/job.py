@@ -51,7 +51,13 @@ class StreamReader:
         limit_top = self.save_limit // 2
         limit_bottom = self.save_limit - limit_top
         while True:
-            line = (await stream.readline()).decode("utf-8")
+            try:
+                line = (await stream.readline()).decode("utf-8")
+            except ValueError:
+                logger.warning(
+                    "job %s: ignored a very long line", self.job_name
+                )
+                continue
             if not line:
                 return
             out_line = prefix + line
@@ -189,7 +195,7 @@ class MailReporter(Reporter):
         message["Date"] = datetime.now(timezone.utc)
         if mail["html"]:
             message.set_payload(body)
-            message.add_header('Content-Type','text/html')
+            message.add_header("Content-Type", "text/html")
         else:
             message.set_content(body)
         smtp = aiosmtplib.SMTP(
