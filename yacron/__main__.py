@@ -15,7 +15,7 @@ def main_loop(loop):
         "-c", "--config", default="/etc/yacron.d", metavar="FILE-OR-DIR"
     )
     parser.add_argument("-l", "--log-level", default="INFO")
-    parser.add_argument("-v", "--validate-config", default=False)
+    parser.add_argument("-v", "--validate-config", default=False, action="store_true")
     parser.add_argument("--version", default=False, action="store_true")
     args = parser.parse_args()
 
@@ -33,7 +33,7 @@ def main_loop(loop):
         logger.error("Configuration error: %s", str(err))
         sys.exit(1)
 
-    if args.validate_config is True:
+    if args.validate_config:
         logger.info("Configuration is valid.")
         sys.exit(0)
 
