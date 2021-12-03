@@ -37,7 +37,7 @@ def test_stream_reader(save_limit, input_lines, output, expected_failure):
     loop = asyncio.get_event_loop()
     fake_stream = asyncio.StreamReader()
     reader = yacron.job.StreamReader(
-        "cronjob-1", "stderr", fake_stream, save_limit
+        "cronjob-1", "stderr", fake_stream, "", save_limit
     )
 
     config, _, _ = yacron.config.parse_config_string(
@@ -71,7 +71,7 @@ def test_stream_reader_long_line():
     loop = asyncio.get_event_loop()
     fake_stream = asyncio.StreamReader()
     reader = yacron.job.StreamReader(
-        "cronjob-1", "stderr", fake_stream, 500
+        "cronjob-1", "stderr", fake_stream, "", 500
     )
 
     config, _, _ = yacron.config.parse_config_string(
