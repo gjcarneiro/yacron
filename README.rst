@@ -277,6 +277,31 @@ By default, yacron captures only standard error.  If a cron job's standard error
 or standard output capturing is not enabled, these streams will simply write to
 the same standard output and standard error as yacron itself.
 
+Both `stdout` and `stderr` stream lines are by default prefixed with
+`[{job_name} {stream_name}]`, i.e. `[test-01 stdout]`, if for any reason you
+need to change this, provide the option `streamPrefix` with your own custom string.
+
+.. code-block:: yaml
+
+  - name: test-01
+    command: echo "hello world"
+    schedule:
+      minute: "*/2"
+    captureStdout: true
+    streamPrefix: "[{job_name} job]"
+
+In some cases, for instance when you're logging JSON objects you might want to
+completely get rid of the prefix altogether:
+
+.. code-block:: yaml
+
+  - name: test-01
+    command: echo "hello world"
+    schedule:
+      minute: "*/2"
+    captureStdout: true
+    streamPrefix: ""
+
 It is possible also to report job success, as well as failure, via the
 ``onSuccess`` option.
 
