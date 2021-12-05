@@ -116,6 +116,7 @@ DEFAULT_CONFIG = {
     "executionTimeout": None,
     "killTimeout": 30,
     "statsd": None,
+    "streamPrefix": "[{job_name} {stream_name}] ",
 }
 
 
@@ -206,6 +207,7 @@ _job_defaults_common = {
     Opt("statsd"): Map({"prefix": Str(), "host": Str(), "port": Int()}),
     Opt("user"): Str() | Int(),
     Opt("group"): Str() | Int(),
+    Opt("streamPrefix"): Str(),
 }
 
 _job_schema_dict = dict(_job_defaults_common)
@@ -284,6 +286,7 @@ class JobConfig:
         self.concurrencyPolicy = config.pop("concurrencyPolicy")
         self.captureStderr = config.pop("captureStderr")
         self.captureStdout = config.pop("captureStdout")
+        self.streamPrefix = config.pop("streamPrefix")
         self.saveLimit = config.pop("saveLimit")
         self.utc = config.pop("utc")
         self.timezone = None  # type: Optional[datetime.tzinfo]

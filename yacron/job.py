@@ -36,6 +36,7 @@ class StreamReader:
         job_name: str,
         stream_name: str,
         stream: asyncio.StreamReader,
+        stream_prefix: str,
         save_limit: int,
     ) -> None:
         self.save_top = []  # type: List[str]
@@ -43,11 +44,14 @@ class StreamReader:
         self.job_name = job_name
         self.save_limit = save_limit
         self.stream_name = stream_name
+        self.stream_prefix = stream_prefix
         self._reader = create_task(self._read(stream))
         self.discarded_lines = 0
 
     async def _read(self, stream):
-        prefix = "[{} {}] ".format(self.job_name, self.stream_name)
+        prefix = self.stream_prefix.format(
+            job_name=self.job_name, stream_name=self.stream_name
+        )
         limit_top = self.save_limit // 2
         limit_bottom = self.save_limit - limit_top
         while True:
@@ -377,6 +381,7 @@ class RunningJob:
                 self.config.name,
                 "stderr",
                 self.proc.stderr,
+                self.config.streamPrefix,
                 self.config.saveLimit,
             )
         if self.config.captureStdout:
@@ -385,6 +390,7 @@ class RunningJob:
                 self.config.name,
                 "stdout",
                 self.proc.stdout,
+                self.config.streamPrefix,
                 self.config.saveLimit,
             )
 
