@@ -92,6 +92,7 @@ DEFAULT_CONFIG = {
     "captureStderr": True,
     "captureStdout": False,
     "saveLimit": 4096,
+    "maxLineLength": 16*1024*1024,
     "utc": True,
     "timezone": None,
     "failsWhen": {
@@ -175,6 +176,7 @@ _job_defaults_common = {
     Opt("captureStderr"): Bool(),
     Opt("captureStdout"): Bool(),
     Opt("saveLimit"): Int(),
+    Opt("maxLineLength"): Int(),
     Opt("utc"): Bool(),
     Opt("timezone"): Str(),
     Opt("failsWhen"): Map(
@@ -288,6 +290,7 @@ class JobConfig:
         self.captureStdout = config.pop("captureStdout")
         self.streamPrefix = config.pop("streamPrefix")
         self.saveLimit = config.pop("saveLimit")
+        self.maxLineLength = config.pop("maxLineLength")
         self.utc = config.pop("utc")
         self.timezone = None  # type: Optional[datetime.tzinfo]
         if config["timezone"] is not None:

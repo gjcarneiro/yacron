@@ -355,9 +355,13 @@ class RunningJob:
             self.execution_deadline = (
                 time.perf_counter() + self.config.executionTimeout
             )
+        if self.config.captureStderr or self.config.captureStdout:
+            kwargs["limit"] = self.config.maxLineLength
 
         try:
-            self.proc = await create(*[c.encode() for c in cmd], **kwargs)
+            args = [c.encode() for c in cmd]
+            logger.debug("subprocess: args=%r, kwargs=%r", args, kwargs)
+            self.proc = await create(*args, **kwargs)
         except (
             subprocess.SubprocessError,
             UnicodeEncodeError,
