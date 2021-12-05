@@ -2,9 +2,11 @@
 History
 =======
 
-0.16.0 (???)
-------------
+0.16.0 (2021-12-05)
+-------------------
 
+* make the capture max line length configurable and change the default
+  from 64K to 16M (#56)
 * Add config option to change prefix of subprocess stream lines (#58, eelkeh)
 
 
