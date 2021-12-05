@@ -2,6 +2,12 @@
 History
 =======
 
+0.16.0 (???)
+------------
+
+* Add config option to change prefix of subprocess stream lines (#58, eelkeh)
+
+
 0.15.1 (2021-11-19)
 -------------------
 

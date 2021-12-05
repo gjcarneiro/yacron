@@ -279,7 +279,8 @@ the same standard output and standard error as yacron itself.
 
 Both `stdout` and `stderr` stream lines are by default prefixed with
 ``[{job_name} {stream_name}]``, i.e. ``[test-01 stdout]``, if for any reason you
-need to change this, provide the option ``streamPrefix`` with your own custom string.
+need to change this, provide the option ``streamPrefix`` (new in version 0.16)
+with your own custom string.
 
 .. code-block:: yaml
 
