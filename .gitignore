@@ -4,6 +4,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
+#ingore intellij
+.idea
+
 # C extensions
 *.so
 

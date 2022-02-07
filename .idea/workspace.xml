@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d33a6784-8e47-40d4-9fa5-a613c77f37a1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/example/docker/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/docker/README" beforeDir="false" afterPath="$PROJECT_DIR$/example/README" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/docker/k8s-deploy.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/example/k8s-deploy.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/docker/yacrontab.yaml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,16 +38,18 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/example/docker/ubuntu" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/example" />
     <property name="nodejs_package_manager_path" value="npm" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/example" />
       <recent name="$PROJECT_DIR$/example/docker/ubuntu" />
       <recent name="$PROJECT_DIR$/example/scripts" />
       <recent name="$PROJECT_DIR$/example/docker2" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/example" />
       <recent name="$PROJECT_DIR$/example/docker/ubuntu" />
     </key>
   </component>
@@ -66,7 +65,7 @@
       <workItem from="1643747551132" duration="4124000" />
       <workItem from="1643774452630" duration="2291000" />
       <workItem from="1643997796709" duration="6823000" />
-      <workItem from="1644259523459" duration="882000" />
+      <workItem from="1644259523459" duration="1145000" />
     </task>
     <servers />
   </component>
