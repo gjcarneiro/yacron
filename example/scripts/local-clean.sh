@@ -10,4 +10,4 @@ docker stop $(docker ps -a | grep $IMAGE_NAME:$TAG |  awk '{print $1}')
 docker rm $(docker ps -a | grep $IMAGE_NAME:$TAG |  awk '{print $1}')
 
 ## Delete image.
-#docker rmi --force $(docker images | grep $IMAGE_NAME | grep $TAG |  awk '{print $3}')
+docker rmi --force $(docker images | grep $IMAGE_NAME | grep $TAG |  awk '{print $3}')

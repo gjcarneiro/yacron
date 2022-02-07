@@ -18,4 +18,4 @@ COPY stop-supervisor.sh /etc/supervisor/stop-supervisor.sh
 RUN chmod 755 /entrypoint.sh && \
     chmod 755 /etc/supervisor/stop-supervisor.sh
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+ENTRYPOINT ["/entrypoint.sh"]
