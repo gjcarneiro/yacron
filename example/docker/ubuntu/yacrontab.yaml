@@ -6,5 +6,6 @@ defaults:
 jobs:
   - name: test-01
     command: echo "hello from $HOSTNAME"
-    schedule: "*/2 * * * *"
+    schedule: "*/1 * * * *"
     captureStdout: true
+    captureStderr: true
