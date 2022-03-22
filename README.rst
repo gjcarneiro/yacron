@@ -255,7 +255,7 @@ email, Sentry and shell command (additional reporting methods might be added in 
           smtpHost: 127.0.0.1
           # optional fields:
           username: "username1"  # set username and password to enable login
-          pasword:
+          password:
             value: example
             # Alternatively:
             # fromFile: /etc/secrets/my-secret-password
@@ -422,12 +422,12 @@ Yacron has builtin support for writing job metrics to Statsd_:
         command: echo "hello"
         schedule: "* * * * *"
         statsd:
-          host: my-statsd.exemple.com
+          host: my-statsd.example.com
           port: 8125
           prefix: my.cron.jobs.prefix.test01
 
 With this config Yacron will write the following metrics over UDP
-to the Statsd listening on ``my-statsd.exemple.com:8125``:
+to the Statsd listening on ``my-statsd.example.com:8125``:
 
 .. code-block::
 
