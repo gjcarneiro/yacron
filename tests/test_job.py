@@ -416,8 +416,14 @@ def test_report_sentry(
 @pytest.mark.parametrize(
     "command, expected_output",
     [
-        ('echo "foobar" && exit 123', 'test - echo "foobar" && exit 123 - * * * * * - Error code 123'),
-        ("\n      - bad-cmd\n      - arg", 'test - bad-cmd arg - * * * * * - Error code 123'),
+        (
+            'echo "foobar" && exit 123',
+            'test - echo "foobar" && exit 123 - * * * * * - Error code 123',
+        ),
+        (
+            "\n      - bad-cmd\n      - arg",
+            "test - bad-cmd arg - * * * * * - Error code 123",
+        ),
     ],
 )
 def test_report_shell(command, expected_output):
@@ -434,7 +440,10 @@ jobs:
     onFailure:
       report:
         shell:
-            command: echo "$YACRON_JOB_NAME - $YACRON_JOB_COMMAND - $YACRON_JOB_SCHEDULE - Error code $YACRON_RETCODE"  >> {out_file_path}
+            command: >
+                echo "$YACRON_JOB_NAME - $YACRON_JOB_COMMAND -
+                $YACRON_JOB_SCHEDULE - Error code $YACRON_RETCODE"
+                >> {out_file_path}
     """,
             "",
         )
