@@ -413,7 +413,14 @@ def test_report_sentry(
     }
 
 
-def test_report_shell():
+@pytest.mark.parametrize(
+    "command, expected_output",
+    [
+        ('echo "foobar" && exit 123', 'test - echo "foobar" && exit 123 - * * * * * - Error code 123'),
+        ("\n      - bad-cmd\n      - arg", 'test - bad-cmd arg - * * * * * - Error code 123'),
+    ],
+)
+def test_report_shell(command, expected_output):
     stdout, stderr = None, None
     with tempfile.TemporaryDirectory() as tmp:
         out_file_path = os.path.join(tmp, "unit_test_file")
@@ -422,12 +429,12 @@ def test_report_shell():
             f"""
 jobs:
   - name: test
-    command: echo "foobar" && exit 123
+    command: {command}
     schedule: "* * * * *"
     onFailure:
       report:
         shell:
-            command: echo "Error code $YACRON_RETCODE"  >> {out_file_path}
+            command: echo "$YACRON_JOB_NAME - $YACRON_JOB_COMMAND - $YACRON_JOB_SCHEDULE - Error code $YACRON_RETCODE"  >> {out_file_path}
     """,
             "",
         )
@@ -458,7 +465,7 @@ jobs:
         assert os.path.isfile(out_file_path)
         with open(out_file_path, "r") as file:
             data = file.read()
-        assert data.strip() == "Error code 123"
+        assert data.strip() == expected_output
 
 
 @pytest.mark.parametrize(

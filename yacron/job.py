@@ -240,6 +240,11 @@ class ShellReporter(Reporter):
             "YACRON_FAIL_REASON": job.fail_reason
             if job.fail_reason is not None
             else "",
+            "YACRON_JOB_NAME": job.config.name,
+            "YACRON_JOB_COMMAND": job.config.command 
+            if not isinstance(job.config.command, list) 
+            else ' '.join(job.config.command),
+            "YACRON_JOB_SCHEDULE": job.config.schedule_unparsed,
             "YACRON_FAILED": "1" if job.failed else "0",
             "YACRON_RETCODE": str(job.retcode),
             "YACRON_STDERR": job.stderr if job.stderr is not None else "",
