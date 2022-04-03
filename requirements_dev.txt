@@ -30,3 +30,4 @@ typing-extensions==3.10.0.0
 virtualenv==20.4.7
 yarl==1.6.3
 types-pytz==2021.1.0
+pytest-asyncio==0.18.3

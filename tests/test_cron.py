@@ -28,6 +28,14 @@ def fixed_current_time(monkeypatch):
     monkeypatch.setattr("yacron.cron.get_now", get_now)
 
 
+@pytest.fixture()
+def tracing_running_job(monkeypatch):
+    TracingRunningJob._TRACE = asyncio.Queue()
+    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+    yield TracingRunningJob
+    TracingRunningJob._TRACE = asyncio.Queue()
+
+
 class TracingRunningJob(RunningJob):
 
     _TRACE = asyncio.Queue()
@@ -105,8 +113,8 @@ jobs:
         ),
     ],
 )
-def test_simple(monkeypatch, config_yaml, expected_events):
-    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+@pytest.mark.asyncio
+async def test_simple(tracing_running_job, config_yaml, expected_events):
     cron = yacron.cron.Cron(None, config_yaml=config_yaml)
 
     events = []
@@ -114,7 +122,7 @@ def test_simple(monkeypatch, config_yaml, expected_events):
     async def wait_and_quit():
         the_job = None
         while True:
-            ts, event, job = await TracingRunningJob._TRACE.get()
+            ts, event, job = await tracing_running_job._TRACE.get()
             print(ts, event)
             if the_job is None:
                 job = the_job
@@ -125,8 +133,7 @@ def test_simple(monkeypatch, config_yaml, expected_events):
                 break
         cron.signal_shutdown()
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
+    await asyncio.gather(wait_and_quit(), cron.run())
     assert events == expected_events
 
 
@@ -146,8 +153,7 @@ jobs:
 """
 
 
-def test_fail_retry(monkeypatch):
-    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+async def test_fail_retry(tracing_running_job):
     cron = yacron.cron.Cron(None, config_yaml=RETRYING_JOB_THAT_FAILS)
 
     events = []
@@ -155,7 +161,7 @@ def test_fail_retry(monkeypatch):
     async def wait_and_quit():
         known_jobs = {}
         while True:
-            ts, event, job = await TracingRunningJob._TRACE.get()
+            ts, event, job = await tracing_running_job._TRACE.get()
             try:
                 jobnum = known_jobs[job]
             except KeyError:
@@ -170,8 +176,7 @@ def test_fail_retry(monkeypatch):
                 break
         cron.signal_shutdown()
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
+    await asyncio.gather(wait_and_quit(), cron.run())
     assert events == [
         # initial attempt
         (1, "create"),
@@ -213,8 +218,7 @@ jobs:
 """
 
 
-def test_execution_timeout(monkeypatch):
-    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+async def test_execution_timeout(tracing_running_job):
     cron = yacron.cron.Cron(None, config_yaml=JOB_THAT_HANGS)
 
     events = []
@@ -223,7 +227,7 @@ def test_execution_timeout(monkeypatch):
     async def wait_and_quit():
         known_jobs = {}
         while True:
-            ts, event, job = await TracingRunningJob._TRACE.get()
+            ts, event, job = await tracing_running_job._TRACE.get()
             try:
                 jobnum = known_jobs[job]
             except KeyError:
@@ -239,8 +243,7 @@ def test_execution_timeout(monkeypatch):
                 break
         cron.signal_shutdown()
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
+    await asyncio.gather(wait_and_quit(), cron.run())
     assert events == [
         # initial attempt
         (1, "create"),
@@ -274,10 +277,13 @@ jobs:
     "policy,expected_numjobs,expected_max_running",
     [("Allow", 2, 2), ("Forbid", 1, 1), ("Replace", 2, 1)],
 )
-def test_concurrency_policy(
-    monkeypatch, policy, expected_numjobs, expected_max_running
+async def test_concurrency_policy(
+    monkeypatch,
+    tracing_running_job,
+    policy,
+    expected_numjobs,
+    expected_max_running,
 ):
-    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
     START_TIME = datetime.datetime(
         year=1999,
         month=12,
@@ -317,7 +323,7 @@ def test_concurrency_policy(
         pending_jobs = set()
         running_jobs = set()
         while not (known_jobs and not pending_jobs):
-            ts, event, job = await TracingRunningJob._TRACE.get()
+            ts, event, job = await tracing_running_job._TRACE.get()
             try:
                 jobnum = known_jobs[job]
             except KeyError:
@@ -342,16 +348,14 @@ def test_concurrency_policy(
             max_running = max(len(running_jobs), max_running)
         cron.signal_shutdown()
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
+    await asyncio.gather(wait_and_quit(), cron.run())
     import pprint
 
     pprint.pprint(events)
     assert (numjobs, max_running) == (expected_numjobs, expected_max_running)
 
 
-def test_simple_config_file(monkeypatch):
-    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+def test_simple_config_file(tracing_running_job):
     config_arg = str(Path(__file__).parent / "testconfig.yaml")
     yacron.cron.Cron(config_arg)
 
@@ -373,8 +377,7 @@ jobs:
 
 
 @pytest.mark.xfail
-def test_concurrency_and_backoff(monkeypatch):
-    monkeypatch.setattr(yacron.cron, "RunningJob", TracingRunningJob)
+async def test_concurrency_and_backoff(monkeypatch, tracing_running_job):
     START_TIME = datetime.datetime(
         year=1999,
         month=12,
@@ -422,10 +425,10 @@ def test_concurrency_and_backoff(monkeypatch):
         known_jobs = {}
         pending_jobs = set()
         running_jobs = set()
-        while get_now(True) < STOP_TIME:
+        while get_now(None) < STOP_TIME:
             try:
                 ts, event, job = await asyncio.wait_for(
-                    TracingRunningJob._TRACE.get(), 0.1
+                    tracing_running_job._TRACE.get(), 0.1
                 )
             except asyncio.TimeoutError:
                 continue
@@ -452,8 +455,7 @@ def test_concurrency_and_backoff(monkeypatch):
                 running_jobs.discard(jobnum)
         cron.signal_shutdown()
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(wait_and_quit(), cron.run()))
+    await asyncio.gather(wait_and_quit(), cron.run())
     import pprint
 
     pprint.pprint(events)
