@@ -243,11 +243,17 @@ class ShellReporter(Reporter):
         std_out_str = job.stdout if job.stdout is not None else ""
         # this is an arbitrary safe lower limit
         max_length_arg = 1024 * 16
-        args_too_long = len(std_err_str) > max_length_arg or \
-                        len(std_out_str) > max_length_arg or \
-                        len(std_err_str) + len(std_out_str) > max_length_arg
-        std_err_str_safe = std_err_str if not args_too_long else std_err_str[:max_length_arg]
-        std_out_str_safe = std_out_str if not args_too_long else std_out_str[:max_length_arg]
+        args_too_long = (
+            len(std_err_str) > max_length_arg
+            or len(std_out_str) > max_length_arg
+            or len(std_err_str) + len(std_out_str) > max_length_arg
+        )
+        std_err_str_safe = (
+            std_err_str if not args_too_long else std_err_str[:max_length_arg]
+        )
+        std_out_str_safe = (
+            std_out_str if not args_too_long else std_out_str[:max_length_arg]
+        )
 
         env = {
             **os.environ,
@@ -265,8 +271,12 @@ class ShellReporter(Reporter):
             "YACRON_RETCODE": str(job.retcode),
             "YACRON_STDERR": std_err_str_safe,
             "YACRON_STDOUT": std_out_str_safe,
-            "YACRON_STDERR_TRUNCATED": len(std_err_str_safe) != len(std_err_str),
-            "YACRON_STDOUT_TRUNCATED": len(std_out_str_safe) != len(std_out_str),
+            "YACRON_STDERR_TRUNCATED": (
+                "1" if len(std_err_str_safe) != len(std_err_str) else "0"
+            ),
+            "YACRON_STDOUT_TRUNCATED": (
+                "1" if len(std_out_str_safe) != len(std_out_str) else "0"
+            ),
         }
 
         logger.debug("Executing shell report cmd: %s", cmd)
