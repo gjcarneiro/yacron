@@ -246,8 +246,8 @@ class ShellReporter(Reporter):
         args_too_long = len(std_err_str) > max_length_arg or \
                         len(std_out_str) > max_length_arg or \
                         len(std_err_str) + len(std_out_str) > max_length_arg
-        std_err_str = std_err_str if not args_too_long else ""
-        std_out_str = std_out_str if not args_too_long else ""
+        std_err_str_safe = std_err_str if not args_too_long else std_err_str[:max_length_arg]
+        std_out_str_safe = std_out_str if not args_too_long else std_out_str[:max_length_arg]
 
         env = {
             **os.environ,
@@ -263,8 +263,10 @@ class ShellReporter(Reporter):
             "YACRON_JOB_SCHEDULE": job.config.schedule_unparsed,
             "YACRON_FAILED": "1" if job.failed else "0",
             "YACRON_RETCODE": str(job.retcode),
-            "YACRON_STDERR": std_err_str,
-            "YACRON_STDOUT": std_out_str,
+            "YACRON_STDERR": std_err_str_safe,
+            "YACRON_STDOUT": std_out_str_safe,
+            "YACRON_STDERR_TRUNCATED": len(std_err_str_safe) != len(std_err_str),
+            "YACRON_STDOUT_TRUNCATED": len(std_out_str_safe) != len(std_out_str),
         }
 
         logger.debug("Executing shell report cmd: %s", cmd)
