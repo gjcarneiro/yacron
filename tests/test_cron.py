@@ -376,7 +376,7 @@ jobs:
 """
 
 
-@pytest.mark.xfail
+# @pytest.mark.xfail
 async def test_concurrency_and_backoff(monkeypatch, tracing_running_job):
     START_TIME = datetime.datetime(
         year=1999,

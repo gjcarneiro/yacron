@@ -509,7 +509,8 @@ class RunningJob:
     async def cancel(self) -> None:
         if self.proc is None:
             raise RuntimeError("process is not running")
-        self.proc.terminate()
+        if self.proc.returncode is None:
+            self.proc.terminate()
         try:
             await asyncio.wait_for(self.proc.wait(), self.config.killTimeout)
         except asyncio.TimeoutError:
