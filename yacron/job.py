@@ -235,6 +235,26 @@ class ShellReporter(Reporter):
                 cmd = [shell_config["command"]]
 
         # pass the necessary information as env variables
+
+        # We have to be a bit careful because job.stderr and job.stdout
+        # can potentially be very large. On Linux there are limits
+        # both on the individual as well as combined length of the arguments.
+        std_err_str = job.stderr if job.stderr is not None else ""
+        std_out_str = job.stdout if job.stdout is not None else ""
+        # this is an arbitrary safe lower limit
+        max_length_arg = 1024 * 16
+        args_too_long = (
+            len(std_err_str) > max_length_arg
+            or len(std_out_str) > max_length_arg
+            or len(std_err_str) + len(std_out_str) > max_length_arg
+        )
+        std_err_str_safe = (
+            std_err_str if not args_too_long else std_err_str[:max_length_arg]
+        )
+        std_out_str_safe = (
+            std_out_str if not args_too_long else std_out_str[:max_length_arg]
+        )
+
         env = {
             **os.environ,
             "YACRON_FAIL_REASON": (
@@ -249,8 +269,14 @@ class ShellReporter(Reporter):
             "YACRON_JOB_SCHEDULE": job.config.schedule_unparsed,
             "YACRON_FAILED": "1" if job.failed else "0",
             "YACRON_RETCODE": str(job.retcode),
-            "YACRON_STDERR": job.stderr if job.stderr is not None else "",
-            "YACRON_STDOUT": job.stdout if job.stdout is not None else "",
+            "YACRON_STDERR": std_err_str_safe,
+            "YACRON_STDOUT": std_out_str_safe,
+            "YACRON_STDERR_TRUNCATED": (
+                "1" if len(std_err_str_safe) != len(std_err_str) else "0"
+            ),
+            "YACRON_STDOUT_TRUNCATED": (
+                "1" if len(std_out_str_safe) != len(std_out_str) else "0"
+            ),
         }
 
         logger.debug("Executing shell report cmd: %s", cmd)
