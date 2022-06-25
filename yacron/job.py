@@ -26,6 +26,14 @@ if "HOSTNAME" not in os.environ:
     os.environ["HOSTNAME"] = gethostname()
 
 
+def fixup_pyinstaller_env(env: Dict[str, str]) -> None:
+    # check for pyinstaller env, fix clobbered env vars
+    # https://github.com/gjcarneiro/yacron/issues/68
+    if getattr(sys, "frozen", False):
+        for env_var in "LD_LIBRARY_PATH", "LIBPATH":
+            env[env_var] = env.get(f"{env_var}_ORIG", "")
+
+
 def create_task(coro: Awaitable) -> asyncio.Task:
     return asyncio.get_event_loop().create_task(coro)
 
@@ -373,6 +381,7 @@ class RunningJob:
                 cmd = [self.config.command]
         if self.config.environment:
             env = dict(os.environ)
+            fixup_pyinstaller_env(env)
             for envvar in self.config.environment:
                 env[envvar["key"]] = envvar["value"]
                 self.env = env
