@@ -1,4 +1,3 @@
-import pytest
 import yacron.job
 import yacron.config
 import asyncio

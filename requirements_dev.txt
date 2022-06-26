@@ -1,6 +1,6 @@
-aiohttp==3.7.4
+aiohttp==3.8.1
 appdirs==1.4.4
-async-timeout==3.0.1
+async-timeout==4.0.2
 attrs==21.2.0
 chardet==3.0.4
 coverage==5.5
