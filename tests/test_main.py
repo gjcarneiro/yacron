@@ -26,7 +26,7 @@ def exit(num):
 
 
 def test_good_config(monkeypatch):
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     monkeypatch.setattr(yacron.__main__, "Cron", FakeCron)
     config_file = str(Path(__file__).parent / "testconfig.yaml")
     monkeypatch.setattr(sys, "argv", ["yacron", "-c", config_file])
@@ -34,7 +34,7 @@ def test_good_config(monkeypatch):
 
 
 def test_broken_config(monkeypatch):
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     monkeypatch.setattr(yacron.__main__, "Cron", FakeCron)
     config_file = str(Path(__file__).parent / "testbrokenconfig.yaml")
     monkeypatch.setattr(sys, "argv", ["yacron", "-c", config_file])
@@ -44,7 +44,7 @@ def test_broken_config(monkeypatch):
 
 
 def test_missing_config(monkeypatch):
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
     monkeypatch.setattr(yacron.__main__, "Cron", FakeCron)
     config_file = str(Path(__file__).parent / "doesnotexist.yaml")
     monkeypatch.setattr(sys, "argv", ["yacron", "-c", config_file])

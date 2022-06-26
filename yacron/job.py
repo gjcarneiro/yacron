@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timezone
 from email.message import EmailMessage
 from socket import gethostname
-from typing import Any, Awaitable, Dict, List, Optional, Union, Tuple  # noqa
+from typing import Any, Dict, List, Optional, Tuple
 import subprocess
 
 import sentry_sdk
@@ -34,10 +34,6 @@ def fixup_pyinstaller_env(env: Dict[str, str]) -> None:
             env[env_var] = env.get(f"{env_var}_ORIG", "")
 
 
-def create_task(coro: Awaitable) -> asyncio.Task:
-    return asyncio.get_event_loop().create_task(coro)
-
-
 class StreamReader:
     def __init__(
         self,
@@ -53,7 +49,7 @@ class StreamReader:
         self.save_limit = save_limit
         self.stream_name = stream_name
         self.stream_prefix = stream_prefix
-        self._reader = create_task(self._read(stream))
+        self._reader = asyncio.create_task(self._read(stream))
         self.discarded_lines = 0
 
     async def _read(self, stream):

@@ -49,10 +49,6 @@ def next_sleep_interval() -> float:
     return (target - now).total_seconds()
 
 
-def create_task(coro: Awaitable) -> asyncio.Task:
-    return asyncio.get_event_loop().create_task(coro)
-
-
 def web_site_from_url(runner: web.AppRunner, url: str) -> web.BaseSite:
     parsed = urlparse(url)
     if parsed.scheme == "http":
@@ -97,7 +93,7 @@ class Cron:
         self.web_config = None  # type: Optional[WebConfig]
 
     async def run(self) -> None:
-        self._wait_for_running_jobs_task = create_task(
+        self._wait_for_running_jobs_task = asyncio.create_task(
             self._wait_for_running_jobs()
         )
 
@@ -332,7 +328,7 @@ class Cron:
                 for jobs in self.running_jobs.values():
                     for job in jobs:
                         if job not in wait_tasks:
-                            wait_tasks[job] = create_task(job.wait())
+                            wait_tasks[job] = asyncio.create_task(job.wait())
                 if not wait_tasks:
                     try:
                         await asyncio.wait_for(self._jobs_running.wait(), 1)
@@ -418,7 +414,7 @@ class Cron:
             await job.report_permanent_failure()
         else:
             retry_delay = state.next_delay()
-            state.task = create_task(
+            state.task = asyncio.create_task(
                 self.schedule_retry_job(
                     job.config.name, retry_delay, state.count
                 )

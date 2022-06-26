@@ -1,3 +1,4 @@
+import pytest
 import yacron.job
 import yacron.config
 import asyncio
@@ -33,8 +34,10 @@ import os
         (0, b"", "", False),
     ],
 )
-def test_stream_reader(save_limit, input_lines, output, expected_failure):
-    loop = asyncio.get_event_loop()
+@pytest.mark.asyncio
+async def test_stream_reader(
+    save_limit, input_lines, output, expected_failure
+):
     fake_stream = asyncio.StreamReader()
     reader = yacron.job.StreamReader(
         "cronjob-1", "stderr", fake_stream, "", save_limit
@@ -59,16 +62,16 @@ jobs:
 
     job._stderr_reader = reader
     job.retcode = 0
-    loop.run_until_complete(
-        asyncio.gather(producer(fake_stream), job._read_job_streams())
-    )
+
+    await asyncio.gather(producer(fake_stream), job._read_job_streams())
+
     out = job.stderr
 
     assert (out, job.failed) == (output, expected_failure)
 
 
-def test_stream_reader_long_line():
-    loop = asyncio.get_event_loop()
+@pytest.mark.asyncio
+async def test_stream_reader_long_line():
     fake_stream = asyncio.StreamReader()
     reader = yacron.job.StreamReader(
         "cronjob-1", "stderr", fake_stream, "", 500
@@ -96,9 +99,9 @@ jobs:
 
     job._stderr_reader = reader
     job.retcode = 0
-    loop.run_until_complete(
-        asyncio.gather(producer(fake_stream), job._read_job_streams())
-    )
+
+    await asyncio.gather(producer(fake_stream), job._read_job_streams())
+
     out = job.stderr
     assert out == "one line\nanother line\n"
 
@@ -169,7 +172,8 @@ jobs:
         (False, "out", None, "Cron job 'test' failed", "out\n"),
     ],
 )
-def test_report_mail(success, stdout, stderr, subject, body):
+@pytest.mark.asyncio
+async def test_report_mail(success, stdout, stderr, subject, body):
     config, _, _ = yacron.config.parse_config_string(A_JOB, "")
     job_config = config[0]
     print(job_config.onSuccess["report"])
@@ -186,7 +190,6 @@ def test_report_mail(success, stdout, stderr, subject, body):
     )
 
     mail = yacron.job.MailReporter()
-    loop = asyncio.get_event_loop()
 
     connect_calls = []
     start_tls_calls = []
@@ -220,9 +223,7 @@ def test_report_mail(success, stdout, stderr, subject, body):
     ), patch(
         "aiosmtplib.SMTP.starttls", starttls
     ):
-        loop.run_until_complete(
-            mail.report(success, job, job_config.onSuccess["report"])
-        )
+        await mail.report(success, job, job_config.onSuccess["report"])
 
     assert smtp_init_args == (
         (),
@@ -296,7 +297,8 @@ def test_report_mail(success, stdout, stderr, subject, body):
         ),
     ],
 )
-def test_report_sentry(
+@pytest.mark.asyncio
+async def test_report_sentry(
     success,
     dsn_from,
     body,
@@ -361,7 +363,6 @@ def test_report_sentry(
             "stderr": "err",
         },
     )
-    loop = asyncio.get_event_loop()
 
     transports = []
 
@@ -388,9 +389,7 @@ def test_report_sentry(
     monkeypatch.setattr("sentry_sdk.client.make_transport", make_transport)
 
     sentry = yacron.job.SentryReporter()
-    loop.run_until_complete(
-        sentry.report(success, job, job_config.onSuccess["report"])
-    )
+    await sentry.report(success, job, job_config.onSuccess["report"])
     for transport in transports:
         assert transport.args[0].get("dsn") == expected_dsn
 
@@ -426,7 +425,8 @@ def test_report_sentry(
         ),
     ],
 )
-def test_report_shell(command, expected_output):
+@pytest.mark.asyncio
+async def test_report_shell(command, expected_output):
     stdout, stderr = None, None
     with tempfile.TemporaryDirectory() as tmp:
         out_file_path = os.path.join(tmp, "unit_test_file")
@@ -465,11 +465,8 @@ jobs:
         )
 
         shell_reporter = yacron.job.ShellReporter()
-        loop = asyncio.get_event_loop()
 
-        loop.run_until_complete(
-            shell_reporter.report(False, job, job_config.onFailure["report"])
-        )
+        await shell_reporter.report(False, job, job_config.onFailure["report"])
 
         assert os.path.isfile(out_file_path)
         with open(out_file_path, "r") as file:
@@ -485,7 +482,10 @@ jobs:
         ("bash", 'echo "hello"', "exec", (b"bash", b"-c", b'echo "hello"')),
     ],
 )
-def test_job_run(monkeypatch, shell, command, expected_type, expected_args):
+@pytest.mark.asyncio
+async def test_job_run(
+    monkeypatch, shell, command, expected_type, expected_args
+):
 
     shell_commands = []
     exec_commands = []
@@ -548,12 +548,8 @@ jobs:
 
     job = yacron.job.RunningJob(job_config, None)
 
-    async def run(job):
-        await job.start()
-        await job.wait()
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run(job))
+    await job.start()
+    await job.wait()
 
     if shell_commands:
         run_type = "shell"
@@ -571,7 +567,8 @@ jobs:
     assert args == expected_args
 
 
-def test_execution_timeout():
+@pytest.mark.asyncio
+async def test_execution_timeout():
     config, _, _ = yacron.config.parse_config_string(
         """
 jobs:
@@ -588,19 +585,52 @@ jobs:
         "",
     )
     job_config = config[0]
+    job = yacron.job.RunningJob(job_config, None)
+    await job.start()
+    await job.wait()
+    assert job.stdout == "hello\n"
 
-    async def test(job):
+
+@pytest.mark.asyncio
+async def test_error1():
+    config, _, _ = yacron.config.parse_config_string(
+        """
+jobs:
+  - name: test
+    command: echo "hello"
+    schedule: "* * * * *"
+""",
+        "",
+    )
+    job_config = config[0]
+    job = yacron.job.RunningJob(job_config, None)
+
+    await job.start()
+    with pytest.raises(RuntimeError):
         await job.start()
+    await job.cancel()
+
+
+@pytest.mark.asyncio
+async def test_error2():
+    config, _, _ = yacron.config.parse_config_string(
+        """
+jobs:
+  - name: test
+    command: echo "hello"
+    schedule: "* * * * *"
+""",
+        "",
+    )
+    job_config = config[0]
+    job = yacron.job.RunningJob(job_config, None)
+
+    with pytest.raises(RuntimeError):
         await job.wait()
-        return job.stdout
-
-    job = yacron.job.RunningJob(job_config, None)
-    loop = asyncio.get_event_loop()
-    stdout = loop.run_until_complete(test(job))
-    assert stdout == "hello\n"
 
 
-def test_error1():
+@pytest.mark.asyncio
+async def test_error3():
     config, _, _ = yacron.config.parse_config_string(
         """
 jobs:
@@ -613,50 +643,13 @@ jobs:
     job_config = config[0]
     job = yacron.job.RunningJob(job_config, None)
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(job.start())
     with pytest.raises(RuntimeError):
-        loop.run_until_complete(job.start())
-
-
-def test_error2():
-    config, _, _ = yacron.config.parse_config_string(
-        """
-jobs:
-  - name: test
-    command: echo "hello"
-    schedule: "* * * * *"
-""",
-        "",
-    )
-    job_config = config[0]
-    job = yacron.job.RunningJob(job_config, None)
-
-    loop = asyncio.get_event_loop()
-    with pytest.raises(RuntimeError):
-        loop.run_until_complete(job.wait())
-
-
-def test_error3():
-    config, _, _ = yacron.config.parse_config_string(
-        """
-jobs:
-  - name: test
-    command: echo "hello"
-    schedule: "* * * * *"
-""",
-        "",
-    )
-    job_config = config[0]
-    job = yacron.job.RunningJob(job_config, None)
-
-    loop = asyncio.get_event_loop()
-    with pytest.raises(RuntimeError):
-        loop.run_until_complete(job.cancel())
+        await job.cancel()
 
 
 @pytest.mark.parametrize("command", ['echo "hello"', "exit 1"])
-def test_statsd(command):
+@pytest.mark.asyncio
+async def test_statsd(command):
     loop = asyncio.get_event_loop()
     received = []
 
@@ -707,7 +700,7 @@ jobs:
         await asyncio.sleep(0.05)
         return job
 
-    job = loop.run_until_complete(run())
+    job = await run()
 
     assert received
     assert len(received) == 4
