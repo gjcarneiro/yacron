@@ -2,6 +2,14 @@
 History
 =======
 
+0.17.0 (2022-06-26)
+-------------------
+
+* Support Additional Shell Report Vars (RJ Garcia)
+* Shell reporter: handle long lines truncatation (Hannes Hergeth)
+* exe: undo pyinstaller LD_LIBRARY_PATH changes in subprocesses (#68, Gustavo Carneiro)
+
+
 0.16.0 (2021-12-05)
 -------------------
 
