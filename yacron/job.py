@@ -515,7 +515,10 @@ class RunningJob:
         if self.proc is None:
             raise RuntimeError("process is not running")
         if self.proc.returncode is None:
-            self.proc.terminate()
+            try:
+                self.proc.terminate()
+            except ProcessLookupError:
+                pass
         try:
             await asyncio.wait_for(self.proc.wait(), self.config.killTimeout)
         except asyncio.TimeoutError:
