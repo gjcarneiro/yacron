@@ -153,6 +153,7 @@ jobs:
 """
 
 
+@pytest.mark.asyncio
 async def test_fail_retry(tracing_running_job):
     cron = yacron.cron.Cron(None, config_yaml=RETRYING_JOB_THAT_FAILS)
 
@@ -218,6 +219,7 @@ jobs:
 """
 
 
+@pytest.mark.asyncio
 async def test_execution_timeout(tracing_running_job):
     cron = yacron.cron.Cron(None, config_yaml=JOB_THAT_HANGS)
 
@@ -277,6 +279,7 @@ jobs:
     "policy,expected_numjobs,expected_max_running",
     [("Allow", 2, 2), ("Forbid", 1, 1), ("Replace", 2, 1)],
 )
+@pytest.mark.asyncio
 async def test_concurrency_policy(
     monkeypatch,
     tracing_running_job,
@@ -376,7 +379,7 @@ jobs:
 """
 
 
-# @pytest.mark.xfail
+@pytest.mark.asyncio
 async def test_concurrency_and_backoff(monkeypatch, tracing_running_job):
     START_TIME = datetime.datetime(
         year=1999,
@@ -483,7 +486,7 @@ LONDON = pytz.timezone("Europe/London")
 
 
 @pytest.mark.parametrize(
-    "schedule, timezone, utc, now, reboot, result",
+    "schedule, timezone, utc, now, reboot, enabled, result",
     [
         (
             "* * * * *",
@@ -491,6 +494,7 @@ LONDON = pytz.timezone("Europe/London")
             "",
             DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
             False,
+            "",
             True,
         ),
         (
@@ -499,6 +503,7 @@ LONDON = pytz.timezone("Europe/London")
             "",
             DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
             False,
+            "",
             True,
         ),
         (
@@ -507,6 +512,7 @@ LONDON = pytz.timezone("Europe/London")
             "",
             DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
             False,
+            "",
             False,
         ),
         (
@@ -515,6 +521,7 @@ LONDON = pytz.timezone("Europe/London")
             "utc: true",
             DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
             False,
+            "",
             True,
         ),
         (
@@ -523,6 +530,7 @@ LONDON = pytz.timezone("Europe/London")
             "utc: true",  # London is UTC+1 during DST
             DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC).astimezone(LONDON),
             False,
+            "",
             True,
         ),
         (
@@ -531,6 +539,7 @@ LONDON = pytz.timezone("Europe/London")
             "utc: false",  # London is UTC+1 during DST
             DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC).astimezone(LONDON),
             False,
+            "",
             False,
         ),
         (
@@ -539,6 +548,7 @@ LONDON = pytz.timezone("Europe/London")
             "",
             DT(2020, 7, 20, 15, 1, 1, tzinfo=UTC),
             False,
+            "",
             True,
         ),
         (
@@ -547,6 +557,7 @@ LONDON = pytz.timezone("Europe/London")
             "",
             DT(2020, 7, 20, 15, 1, 1, tzinfo=UTC),
             False,
+            "",
             False,
         ),
         (
@@ -555,6 +566,7 @@ LONDON = pytz.timezone("Europe/London")
             "",
             DT(2020, 7, 20, 15, 1, 1, tzinfo=UTC),
             False,
+            "",
             False,
         ),
         (
@@ -563,12 +575,24 @@ LONDON = pytz.timezone("Europe/London")
             "",
             DT(2020, 7, 20, 15, 1, 1, tzinfo=UTC),
             True,
+            "",
             True,
+        ),
+
+        # enabled: false
+        (
+            "* * * * *",
+            "",
+            "",
+            DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
+            False,
+            "enabled: false",
+            False,
         ),
     ],
 )
 def test_job_should_run(
-    monkeypatch, schedule, timezone, utc, now, reboot, result
+    monkeypatch, schedule, timezone, utc, now, reboot, enabled, result
 ):
     def get_now(timezone):
         print("timezone: ", timezone)
@@ -580,7 +604,7 @@ def test_job_should_run(
 
     monkeypatch.setattr("yacron.cron.get_now", get_now)
 
-    config_yaml = """
+    config_yaml = f"""
 jobs:
   - name: test
     command: |
@@ -588,9 +612,8 @@ jobs:
     schedule: "{schedule}"
     {timezone}
     {utc}
-                            """.format(
-        schedule=schedule, timezone=timezone, utc=utc
-    )
+    {enabled}
+                            """
     print(config_yaml)
     cron = yacron.cron.Cron(None, config_yaml=config_yaml)
     job = list(cron.cron_jobs.values())[0]

@@ -118,6 +118,7 @@ DEFAULT_CONFIG = {
     "killTimeout": 30,
     "statsd": None,
     "streamPrefix": "[{job_name} {stream_name}] ",
+    "enabled": True,
 }
 
 
@@ -210,6 +211,7 @@ _job_defaults_common = {
     Opt("user"): Str() | Int(),
     Opt("group"): Str() | Int(),
     Opt("streamPrefix"): Str(),
+    Opt("enabled"): Bool(),
 }
 
 _job_schema_dict = dict(_job_defaults_common)
@@ -292,6 +294,7 @@ class JobConfig:
         self.saveLimit = config.pop("saveLimit")
         self.maxLineLength = config.pop("maxLineLength")
         self.utc = config.pop("utc")
+        self.enabled: bool = config.pop("enabled")
         self.timezone = None  # type: Optional[datetime.tzinfo]
         if config["timezone"] is not None:
             try:

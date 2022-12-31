@@ -742,3 +742,25 @@ And your included ``_inc.yaml`` file could contain some useful defaults:
       report:
         sentry:
           ...
+
+
+Obscure configuration options
++++++++++++++++++++++++++++++
+
+enabled: true|false (default true)
+##################################
+
+(new in yacron 0.18)
+
+It is possible to disable a specific cron job by adding a `enabled: false` option.  Jobs
+with `enabled: false` will simply be skipped, as if they aren't there, apart from
+validating the configuration.
+
+.. code-block:: yaml
+
+    jobs:
+      - name: test-01
+        enabled: false  # this cron job will not run until you change this to `true`
+        command: echo "foobar"
+        shell: /bin/bash
+        schedule: "* * * * *"

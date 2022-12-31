@@ -250,6 +250,13 @@ class Cron:
 
     @staticmethod
     def job_should_run(startup: bool, job: JobConfig) -> bool:
+        if not job.enabled:
+            logger.debug(
+                "Job %s (%s) is disabled in the config",
+                job.name,
+                job.schedule_unparsed,
+            )
+            return False
         if (
             startup
             and isinstance(job.schedule, str)
