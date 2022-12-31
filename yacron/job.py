@@ -43,8 +43,8 @@ class StreamReader:
         stream_prefix: str,
         save_limit: int,
     ) -> None:
-        self.save_top = []  # type: List[str]
-        self.save_bottom = []  # type: List[str]
+        self.save_top: List[str] = []
+        self.save_bottom: List[str] = []
         self.job_name = job_name
         self.save_limit = save_limit
         self.stream_name = stream_name
