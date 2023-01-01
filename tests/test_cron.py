@@ -79,7 +79,7 @@ jobs:
   - name: test
     command: |
       echo "foobar"
-    schedule: "* * * * *"
+    schedule: "@reboot"
 """
 
 JOB_THAT_FAILS = """
@@ -88,7 +88,7 @@ jobs:
     command: |
       echo "foobar"
       exit 2
-    schedule: "* * * * *"
+    schedule: "@reboot"
 """
 
 
@@ -143,7 +143,7 @@ jobs:
     command: |
       echo "foobar"
       exit 2
-    schedule: "* * * * *"
+    schedule: "@reboot"
     onFailure:
       retry:
         maximumRetries: 2
@@ -212,7 +212,7 @@ jobs:
       echo "starting..."
       sleep 10
       echo "all done."
-    schedule: "* * * * *"
+    schedule: "@reboot"
     captureStdout: true
     executionTimeout: 0.25
     killTimeout: 0.25
@@ -268,7 +268,7 @@ jobs:
       echo "starting..."
       sleep 0.5
       echo "all done."
-    schedule: "* * * * *"
+    schedule: "@reboot"
     captureStdout: true
     concurrencyPolicy: {policy}
 """
@@ -369,7 +369,7 @@ jobs:
     command: |
       echo "foobar"
       exit 2
-    schedule: "* * * * *"
+    schedule: "@reboot"
     onFailure:
       retry:
         maximumRetries: 1
@@ -486,7 +486,7 @@ LONDON = pytz.timezone("Europe/London")
 
 
 @pytest.mark.parametrize(
-    "schedule, timezone, utc, now, reboot, enabled, result",
+    "schedule, timezone, utc, now, startup, enabled, result",
     [
         (
             "* * * * *",
@@ -505,6 +505,15 @@ LONDON = pytz.timezone("Europe/London")
             False,
             "",
             True,
+        ),
+        (
+            "59 14 * * *",
+            "",
+            "",
+            DT(2020, 7, 20, 14, 59, 1, tzinfo=UTC),
+            True,  # startup
+            "",
+            False,
         ),
         (
             "49 14 * * *",
@@ -592,7 +601,7 @@ LONDON = pytz.timezone("Europe/London")
     ],
 )
 def test_job_should_run(
-    monkeypatch, schedule, timezone, utc, now, reboot, enabled, result
+    monkeypatch, schedule, timezone, utc, now, startup, enabled, result
 ):
     def get_now(timezone):
         print("timezone: ", timezone)
@@ -617,4 +626,4 @@ jobs:
     print(config_yaml)
     cron = yacron.cron.Cron(None, config_yaml=config_yaml)
     job = list(cron.cron_jobs.values())[0]
-    assert cron.job_should_run(reboot, job) == result
+    assert cron.job_should_run(startup, job) == result

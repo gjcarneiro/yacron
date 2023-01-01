@@ -257,18 +257,17 @@ class Cron:
                 job.schedule_unparsed,
             )
             return False
-        if (
-            startup
-            and isinstance(job.schedule, str)
-            and job.schedule == "@reboot"
-        ):
-            logger.debug(
-                "Job %s (%s) is scheduled for startup (@reboot)",
-                job.name,
-                job.schedule_unparsed,
-            )
-            return True
-        elif isinstance(job.schedule, CronTab):
+        if startup:
+            if isinstance(job.schedule, str) and job.schedule == "@reboot":
+                logger.debug(
+                    "Job %s (%s) is scheduled for startup (@reboot)",
+                    job.name,
+                    job.schedule_unparsed,
+                )
+                return True
+            else:
+                return False
+        if isinstance(job.schedule, CronTab):
             crontab = job.schedule  # type: CronTab
             if crontab.test(get_now(job.timezone).replace(second=0)):
                 logger.debug(
