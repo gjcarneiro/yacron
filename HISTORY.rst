@@ -2,6 +2,13 @@
 History
 =======
 
+0.18.0 (2023-01-01)
+-------------------
+
+* fixes "Job is always executed immediately on yacron start" (#67)
+* add an `enabled` option in jobs (#73)
+* give a better error message when no configuration file is provided or exists (#72)
+
 0.17.0 (2022-06-26)
 -------------------
 
