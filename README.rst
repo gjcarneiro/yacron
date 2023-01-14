@@ -110,9 +110,9 @@ configuration:
         schedule: "*/5 * * * *"
 
 
-The `schedule` option can be a string in the traditional crontab format
-(including @reboot, which will only run the job when yacron is initially
-executed), or can be an object with properties.  The following configuration
+The `schedule` option can be a string in a crontab format specified by https://github.com/josiahcarlson/parse-crontab (this module is used by yacron).
+Additionally @reboot can be included , which will only run the job when yacron is initially
+executed. Further `schedule` can be an object with properties.  The following configuration
 runs a command every 5 minutes, but only on the specific date 2017-07-19, and
 doesn't run it in any other date:
 
