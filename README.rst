@@ -764,3 +764,37 @@ validating the configuration.
         command: echo "foobar"
         shell: /bin/bash
         schedule: "* * * * *"
+
+
+Custom logging
+++++++++++++++
+
+It's possible to provide a custom logging configuration. To do it, prepare
+an appropriate configuration in a YAML file. Then pass it to yacron to using
+``--log-config`` argument.
+
+
+.. code-block:: yaml
+
+    # In the format of:
+    # https://docs.python.org/3/library/logging.config.html#dictionary-schema-details
+
+    version: 1
+
+    disable_existing_loggers: False
+
+    formatters:
+      simple:
+        format: '%(asctime)s [%(processName)s/%(threadName)s] %(levelname)s (%(name)s): %(message)s'
+
+    handlers:
+      console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: simple
+        stream: ext://sys.stdout
+
+    root:
+      level: INFO
+      handlers: [console]
+
