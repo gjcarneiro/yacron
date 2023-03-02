@@ -226,7 +226,12 @@ async def test_report_mail(success, stdout, stderr, subject, body):
 
     assert smtp_init_args == (
         (),
-        {"hostname": "smtp1", "port": 1025, "use_tls": False},
+        {
+            "hostname": "smtp1",
+            "port": 1025,
+            "use_tls": False,
+            "validate_certs": False,
+        },
     )
     assert len(connect_calls) == 1
     assert len(start_tls_calls) == 1
