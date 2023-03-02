@@ -207,7 +207,10 @@ class MailReporter(Reporter):
         else:
             message.set_content(body)
         smtp = aiosmtplib.SMTP(
-            hostname=smtp_host, port=smtp_port, use_tls=mail["tls"]
+            hostname=smtp_host,
+            port=smtp_port,
+            use_tls=mail["tls"],
+            validate_certs=mail["validate_certs"],
         )
         await smtp.connect()
         if mail["starttls"]:
