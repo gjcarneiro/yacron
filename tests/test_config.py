@@ -117,6 +117,7 @@ jobs:
                     },
                     "tls": False,
                     "starttls": False,
+                    "validate_certs": False,
                     "html": False,
                 },
                 "sentry": (
@@ -190,6 +191,7 @@ jobs:
                     },
                     "tls": False,
                     "starttls": False,
+                    "validate_certs": False,
                     "html": False,
                 },
                 "sentry": (
