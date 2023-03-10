@@ -1,3 +1,4 @@
+import logging.config
 import asyncio
 import asyncio.subprocess
 import datetime
@@ -13,6 +14,8 @@ from yacron.config import (
     ConfigError,
     parse_config_string,
     WebConfig,
+    YacronConfig,
+    JobDefaults,
 )
 from yacron.job import RunningJob, JobRetryState
 from crontab import CronTab  # noqa
@@ -82,8 +85,10 @@ class Cron:
             self.update_config()
         if config_yaml is not None:
             # config_yaml is for unit testing
-            config, _, _ = parse_config_string(config_yaml, "")
-            self.cron_jobs = OrderedDict((job.name, job) for job in config)
+            config = parse_config_string(config_yaml, "")
+            self.cron_jobs = OrderedDict(
+                (job.name, job) for job in config.jobs
+            )
 
         self._wait_for_running_jobs_task = None  # type: Optional[asyncio.Task]
         self._stop_event = asyncio.Event()
@@ -98,10 +103,11 @@ class Cron:
         )
 
         startup = True
+        logging_configured = False
         while not self._stop_event.is_set():
             try:
-                web_config = self.update_config()
-                await self.start_stop_web_app(web_config)
+                config = self.update_config()
+                await self.start_stop_web_app(config.web_config)
             except ConfigError as err:
                 logger.error(
                     "Error in configuration file(s), so not updating "
@@ -110,6 +116,19 @@ class Cron:
                 )
             except Exception:  # pragma: nocover
                 logger.exception("please report this as a bug (1)")
+            if config.logging_config is not None and not logging_configured:
+                logging_configured = True
+                try:
+                    logging.config.dictConfig(config.logging_config)
+                except Exception as ex:
+                    logger.error(
+                        "Error while configuring logging: %s\n"
+                        "Check for correct format at "
+                        "https://docs.python.org/3/library/logging.config.html"
+                        "#dictionary-schema-details\n%s",
+                        ex,
+                        config.logging_config,
+                    )
             await self.spawn_jobs(startup)
             startup = False
             sleep_interval = next_sleep_interval()
@@ -135,12 +154,17 @@ class Cron:
         logger.debug("Signalling shutdown")
         self._stop_event.set()
 
-    def update_config(self) -> Optional[WebConfig]:
+    def update_config(self) -> YacronConfig:
         if self.config_arg is None:
-            return None
-        config, web_config = parse_config(self.config_arg)
-        self.cron_jobs = OrderedDict((job.name, job) for job in config)
-        return web_config
+            return YacronConfig(
+                jobs=[],
+                web_config=None,
+                job_defaults=JobDefaults({}),
+                logging_config=None,
+            )
+        config = parse_config(self.config_arg)
+        self.cron_jobs = OrderedDict((job.name, job) for job in config.jobs)
+        return config
 
     async def _web_get_version(self, request: web.Request) -> web.Response:
         return web.Response(text=yacron.version.version)

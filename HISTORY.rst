@@ -2,6 +2,12 @@
 History
 =======
 
+0.19.0
+------
+
+* add ability to configure yacron's own logging (#81 #82 #83, gjcarneiro, bdamian)
+
+
 0.18.0 (2023-01-01)
 -------------------
 
