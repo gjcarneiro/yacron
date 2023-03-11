@@ -31,7 +31,7 @@ def test_mergedicts_lists():
 
 
 def test_simple_config1():
-    jobs, web_config, _ = config.parse_config_string(
+    conf = config.parse_config_string(
         """
 defaults:
   shell: /bin/bash
@@ -51,9 +51,9 @@ jobs:
                        """,
         "",
     )
-    assert web_config is None
-    assert len(jobs) == 1
-    job = jobs[0]
+    assert conf.web_config is None
+    assert len(conf.jobs) == 1
+    job = conf.jobs[0]
     assert job.name == "test-03"
     assert job.command == (
         "trap \"echo '(ignoring SIGTERM)'\" TERM\n"
@@ -69,7 +69,7 @@ jobs:
 
 
 def test_config_default_report():
-    jobs, _, _ = config.parse_config_string(
+    conf = config.parse_config_string(
         """
 defaults:
   onFailure:
@@ -89,8 +89,8 @@ jobs:
                        """,
         "",
     )
-    assert len(jobs) == 1
-    job = jobs[0]
+    assert len(conf.jobs) == 1
+    job = conf.jobs[0]
     assert job.onFailure == (
         {
             "report": {
@@ -138,7 +138,7 @@ jobs:
 def test_config_default_report_override():
     # even if the default says send email on error, it should be possible for
     # specific jobs to override the default and disable sending email.
-    jobs, _, _ = config.parse_config_string(
+    conf = config.parse_config_string(
         """
 defaults:
   onFailure:
@@ -163,8 +163,8 @@ jobs:
                        """,
         "",
     )
-    assert len(jobs) == 1
-    job = jobs[0]
+    assert len(conf.jobs) == 1
+    job = conf.jobs[0]
     assert job.onFailure == (
         {
             "report": {
@@ -210,13 +210,13 @@ jobs:
 
 
 def test_empty_config1():
-    jobs, web_config, _ = config.parse_config_string("", "")
-    assert len(jobs) == 0
-    assert web_config is None
+    conf = config.parse_config_string("", "")
+    assert len(conf.jobs) == 0
+    assert conf.web_config is None
 
 
 def test_environ_file():
-    jobs, _, _ = config.parse_config_string(
+    conf = config.parse_config_string(
         """
 defaults:
   shell: /bin/bash
@@ -239,7 +239,7 @@ jobs:
 """,
         "",
     )
-    job = jobs[0]
+    job = conf.jobs[0]
 
     # NOTE: the file format implicitly verifies that the parsing is being
     # done correctly on these fronts:
@@ -263,7 +263,7 @@ jobs:
 def test_invalid_environ_file():
     # invalid file (no key-value)
     with pytest.raises(ConfigError) as exc:
-        jobs, _, _ = config.parse_config_string(
+        config.parse_config_string(
             """
     defaults:
       shell: /bin/bash
@@ -291,7 +291,7 @@ def test_invalid_environ_file():
 
     # non-existent file should raise ConfigError, not OSError
     with pytest.raises(ConfigError) as exc:
-        jobs, _, _ = config.parse_config_string(
+        config.parse_config_string(
             """
     defaults:
       shell: /bin/bash
@@ -319,12 +319,39 @@ def test_invalid_environ_file():
 
 
 def test_config_include():
-    jobs, _ = config.parse_config(
+    conf = config.parse_config(
         os.path.join(os.path.dirname(__file__), "test_include_parent.yaml")
     )
-    assert len(jobs) == 2
-    job1, job2 = jobs
+    assert len(conf.jobs) == 2
+    job1, job2 = conf.jobs
     assert job1.name == "common-task"
     assert job2.name == "test-03"
     assert job1.shell == "/bin/ksh"
     assert job2.shell == "/bin/ksh"
+
+
+def test_logging_config():
+    conf = config.parse_config_string(
+        """
+logging:
+    version: 1
+    incremental: false
+    disable_existing_loggers: false
+    formatters: one
+    filters: two
+    handlers: three
+    loggers: four
+    root: five
+        """,
+        "",
+    )
+    assert conf.logging_config == {
+        "version": 1,
+        "incremental": False,
+        "disable_existing_loggers": False,
+        "formatters": "one",
+        "filters": "two",
+        "handlers": "three",
+        "loggers": "four",
+        "root": "five",
+    }

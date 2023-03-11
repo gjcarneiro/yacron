@@ -1,14 +1,16 @@
+from dataclasses import dataclass
 from pwd import getpwnam
 from grp import getgrnam
 import logging
 import os.path
 from typing import Union  # noqa
-from typing import List, Optional, Any, Dict, NewType, Tuple
+from typing import List, Optional, Any, Dict, NewType
 import datetime
 import pytz
 
 import strictyaml
 from strictyaml import Optional as Opt, EmptyDict
+from strictyaml import Any as YamlAny
 from strictyaml import (
     Bool,
     EmptyNone,
@@ -27,6 +29,7 @@ from crontab import CronTab
 logger = logging.getLogger("yacron.config")
 WebConfig = NewType("WebConfig", Dict[str, Any])
 JobDefaults = NewType("JobDefaults", Dict[str, Any])
+LoggingConfig = NewType("LoggingConfig", Dict[str, Any])
 
 
 class ConfigError(Exception):
@@ -93,7 +96,7 @@ DEFAULT_CONFIG = {
     "captureStderr": True,
     "captureStdout": False,
     "saveLimit": 4096,
-    "maxLineLength": 16*1024*1024,
+    "maxLineLength": 16 * 1024 * 1024,
     "utc": True,
     "timezone": None,
     "failsWhen": {
@@ -241,6 +244,18 @@ CONFIG_SCHEMA = EmptyDict() | Map(
         Opt("jobs"): Seq(Map(_job_schema_dict)),
         Opt("web"): Map({"listen": Seq(Str())}),
         Opt("include"): Seq(Str()),
+        Opt("logging"): Map(
+            {
+                "version": Int(),
+                Opt("incremental"): Bool(),
+                Opt("disable_existing_loggers"): Bool(),
+                Opt("formatters"): YamlAny(),
+                Opt("filters"): YamlAny(),
+                Opt("handlers"): YamlAny(),
+                Opt("loggers"): YamlAny(),
+                Opt("root"): YamlAny(),
+            }
+        ),
     }
 )
 
@@ -402,9 +417,15 @@ def parse_environment_file(path: str) -> Dict[str, str]:
     return environ
 
 
-def parse_config_string(
-    data: str, path: str
-) -> Tuple[List[JobConfig], Optional[WebConfig], JobDefaults]:
+@dataclass
+class YacronConfig:
+    jobs: List[JobConfig]
+    web_config: Optional[WebConfig]
+    job_defaults: JobDefaults
+    logging_config: Optional[LoggingConfig]
+
+
+def parse_config_string(data: str, path: str) -> YacronConfig:
     try:
         doc = strictyaml.load(data, CONFIG_SCHEMA, label=path).data
     except YAMLError as ex:
@@ -413,36 +434,44 @@ def parse_config_string(
     inc_defaults_merged: dict = {}
     jobs = []
     webconf = WebConfig(doc["web"]) if "web" in doc else None
+    logging_conf = LoggingConfig(doc["logging"]) if "logging" in doc else None
     for include in doc.get("include", ()):
         inc_path = os.path.join(os.path.dirname(path), include)
-        inc_jobs, inc_webconf, inc_defaults = parse_config_file(inc_path)
+        inc_config = parse_config_file(inc_path)
         inc_defaults_merged = dict(
-            mergedicts(inc_defaults_merged, inc_defaults)
+            mergedicts(inc_defaults_merged, inc_config.job_defaults)
         )
-        jobs.extend(inc_jobs)
-        if inc_webconf:
+        jobs.extend(inc_config.jobs)
+        if inc_config.web_config:
             if webconf:
-                raise ConfigError("multiple web config")
-            webconf = inc_webconf
+                raise ConfigError("multiple web configs")
+            webconf = inc_config.web_config
+        if inc_config.logging_config:
+            if logging_conf:
+                raise ConfigError("multiple logging configs")
+            logging_conf = inc_config.logging_config
     defaults = dict(mergedicts(DEFAULT_CONFIG, inc_defaults_merged))
     defaults = dict(mergedicts(defaults, doc.get("defaults", {})))
     for config_job in doc.get("jobs", []):
         job_dict = dict(mergedicts(defaults, config_job))
         jobs.append(JobConfig(job_dict))
-    return jobs, webconf, JobDefaults(defaults)
+    return YacronConfig(
+        jobs=jobs,
+        web_config=webconf,
+        job_defaults=JobDefaults(defaults),
+        logging_config=logging_conf,
+    )
 
 
 def parse_config_file(
     path: str,
-) -> Tuple[List[JobConfig], Optional[WebConfig], JobDefaults]:
+) -> YacronConfig:
     with open(path, "rt", encoding="utf-8") as stream:
         data = stream.read()
     return parse_config_string(data, path)
 
 
-def parse_config(
-    config_arg: str,
-) -> Tuple[List[JobConfig], Optional[WebConfig]]:
+def parse_config(config_arg: str) -> YacronConfig:
     jobs = []
     config_errors = {}
     web_config = None
@@ -454,16 +483,16 @@ def parse_config(
                 continue
             if ext in {".yml", ".yaml"}:
                 try:
-                    config, webconf, _ = parse_config_file(direntry.path)
+                    config = parse_config_file(direntry.path)
                 except ConfigError as err:
                     config_errors[direntry.path] = str(err)
                 except OSError as ex:
                     config_errors[config_arg] = str(ex)
                 else:
-                    jobs.extend(config)
-                    if webconf is not None:
+                    jobs.extend(config.jobs)
+                    if config.web_config is not None:
                         if web_config is None:
-                            web_config = webconf
+                            web_config = config.web_config
                             web_config_source_fname = direntry.path
                         else:
                             raise ConfigError(
@@ -474,11 +503,16 @@ def parse_config(
                             )
     else:
         try:
-            config, web_config, _ = parse_config_file(config_arg)
+            config = parse_config_file(config_arg)
         except OSError as ex:
             config_errors[config_arg] = str(ex)
         else:
-            jobs.extend(config)
+            jobs.extend(config.jobs)
     if config_errors:
         raise ConfigError("\n---".join(config_errors.values()))
-    return jobs, web_config
+    return YacronConfig(
+        jobs=jobs,
+        web_config=config.web_config,
+        job_defaults=config.job_defaults,
+        logging_config=config.logging_config,
+    )
