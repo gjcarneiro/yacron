@@ -2,11 +2,11 @@
 History
 =======
 
-0.19.0
-------
+0.19.0 (2023-03-11)
+-------------------
 
-* add ability to configure yacron's own logging (#81 #82 #83, gjcarneiro, bdamian)
-
+* Add ability to configure yacron's own logging (#81 #82 #83, gjcarneiro, bdamian)
+* Add config value for SMTP(validate_certs=False) (David Batley)
 
 0.18.0 (2023-01-01)
 -------------------
