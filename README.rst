@@ -746,29 +746,30 @@ And your included ``_inc.yaml`` file could contain some useful defaults:
 Custom logging
 ++++++++++++++
 
-It's possible to provide a custom logging configuration, via the `logging` configuration
-section.  For example, the following configuration displays log lines with an embedded
-timestamp for each message.
+It's possible to provide a custom logging configuration, via the ``logging``
+configuration section.  For example, the following configuration displays log lines with
+an embedded timestamp for each message.
 
 .. code-block:: yaml
-  logging:
-    # In the format of:
-    # https://docs.python.org/3/library/logging.config.html#dictionary-schema-details
-    version: 1
-    disable_existing_loggers: false
-    formatters:
-      simple:
-        format: '%(asctime)s [%(processName)s/%(threadName)s] %(levelname)s (%(name)s): %(message)s'
-    handlers:
-      console:
-        class: logging.StreamHandler
-        level: DEBUG
-        formatter: simple
-        stream: ext://sys.stdout
-    root:
-      level: INFO
+
+    logging:
+      # In the format of:
+      # https://docs.python.org/3/library/logging.config.html#dictionary-schema-details
+      version: 1
+      disable_existing_loggers: false
+      formatters:
+        simple:
+          format: '%(asctime)s [%(processName)s/%(threadName)s] %(levelname)s (%(name)s): %(message)s'
       handlers:
-        - console
+        console:
+          class: logging.StreamHandler
+          level: DEBUG
+          formatter: simple
+          stream: ext://sys.stdout
+      root:
+        level: INFO
+        handlers:
+          - console
 
 Obscure configuration options
 +++++++++++++++++++++++++++++
