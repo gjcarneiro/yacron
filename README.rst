@@ -760,6 +760,7 @@ an embedded timestamp for each message.
       formatters:
         simple:
           format: '%(asctime)s [%(processName)s/%(threadName)s] %(levelname)s (%(name)s): %(message)s'
+          datefmt: '%Y-%m-%d %H:%M:%S'
       handlers:
         console:
           class: logging.StreamHandler
