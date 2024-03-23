@@ -229,8 +229,8 @@ class Cron:
         name = request.match_info["name"]
         try:
             job = self.cron_jobs[name]
-        except KeyError:
-            raise web.HTTPNotFound()
+        except KeyError as ex:
+            raise web.HTTPNotFound() from ex
         await self.maybe_launch_job(job)
         return web.Response()
 

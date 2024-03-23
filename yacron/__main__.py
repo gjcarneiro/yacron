@@ -2,12 +2,12 @@ import argparse
 import asyncio
 import asyncio.subprocess
 import logging
+import os
 import signal
 import sys
-import os
 
-from yacron.cron import Cron, ConfigError
 import yacron.version
+from yacron.cron import ConfigError, Cron
 
 CONFIG_DEFAULT = "/etc/yacron.d"
 

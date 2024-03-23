@@ -1,7 +1,6 @@
+import asyncio
 import logging
 import time
-import asyncio
-
 
 logger = logging.getLogger("statsd")
 

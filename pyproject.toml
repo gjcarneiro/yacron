@@ -6,5 +6,29 @@ target_version = ['py310']
 target-version = "py310"
 line-length = 79
 
+[tool.ruff.lint]
+select = [
+    # Bugbear warnings
+    "B",
+    "B9",
+    # mccabe complexity warnings
+    "C",
+    # Pycodestyle errors https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
+    "E",
+    # Pyflakes violations https://flake8.pycqa.org/en/latest/user/error-codes.html
+    "F",
+    # Pycodestyle warnings
+    "W",
+    # pyupgrade
+    # "UP",
+    "I",  # <= import sorting
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 20
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.bandit]
+exclude_dirs = ["tests"]

@@ -446,13 +446,13 @@ class RunningJob:
             try:
                 os.setgid(self.config.gid)
             except OSError as ex:
-                raise RuntimeError("setgid: {}".format(ex))
+                raise RuntimeError("setgid: {}".format(ex)) from ex
         if self.config.uid is not None:
             logger.debug("Changing to uid %r ...", self.config.uid)
             try:
                 os.setuid(self.config.uid)
             except OSError as ex:
-                raise RuntimeError("setuid: {}".format(ex))
+                raise RuntimeError("setuid: {}".format(ex)) from ex
 
     async def wait(self) -> None:
         if self.proc is None:

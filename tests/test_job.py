@@ -1,11 +1,13 @@
-import yacron.job
-import yacron.config
 import asyncio
-import pytest
-import aiosmtplib
-from unittest.mock import Mock, patch
-import tempfile
 import os
+import tempfile
+from unittest.mock import Mock, patch
+
+import aiosmtplib
+import pytest
+
+import yacron.config
+import yacron.job
 
 
 @pytest.mark.parametrize(
@@ -215,12 +217,12 @@ async def test_report_mail(success, stdout, stderr, subject, body):
         smtp_init_args = args, kwargs
         real_init(self, *args, **kwargs)
 
-    with patch("aiosmtplib.SMTP.__init__", init), patch(
-        "aiosmtplib.SMTP.connect", connect
-    ), patch("aiosmtplib.SMTP.send_message", send_message), patch(
-        "aiosmtplib.SMTP.login", login
-    ), patch(
-        "aiosmtplib.SMTP.starttls", starttls
+    with (
+        patch("aiosmtplib.SMTP.__init__", init),
+        patch("aiosmtplib.SMTP.connect", connect),
+        patch("aiosmtplib.SMTP.send_message", send_message),
+        patch("aiosmtplib.SMTP.login", login),
+        patch("aiosmtplib.SMTP.starttls", starttls),
     ):
         await mail.report(success, job, job_config.onSuccess["report"])
 
@@ -302,7 +304,7 @@ async def test_report_mail(success, stdout, stderr, subject, body):
     ],
 )
 @pytest.mark.asyncio
-async def test_report_sentry(
+async def test_report_sentry(  # noqa: C901
     success,
     dsn_from,
     body,
@@ -345,9 +347,9 @@ async def test_report_sentry(
     else:
         raise AssertionError
 
-    job_config.onSuccess["report"]["sentry"][
-        "body"
-    ] = yacron.config.DEFAULT_CONFIG["onFailure"]["report"]["sentry"]["body"]
+    job_config.onSuccess["report"]["sentry"]["body"] = (
+        yacron.config.DEFAULT_CONFIG["onFailure"]["report"]["sentry"]["body"]
+    )
 
     job_config.onSuccess["report"]["sentry"]["fingerprint"] = ["{{ name }}"]
 
@@ -490,7 +492,6 @@ jobs:
 async def test_job_run(
     monkeypatch, shell, command, expected_type, expected_args
 ):
-
     shell_commands = []
     exec_commands = []
 
@@ -543,9 +544,7 @@ jobs:
     environment:
       - key: FOO
         value: bar
-""".format(
-            command=command_snippet, shell=shell
-        ),
+""".format(command=command_snippet, shell=shell),
         "",
     )
     job_config = conf.jobs[0]
@@ -688,9 +687,7 @@ jobs:
       host: 127.0.0.1
       port: {port}
       prefix: the.prefix
-""".format(
-                port=port, command=command
-            ),
+""".format(port=port, command=command),
             "",
         )
         job_config = conf.jobs[0]

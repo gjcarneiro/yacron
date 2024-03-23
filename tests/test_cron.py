@@ -1,13 +1,14 @@
-import time
+import asyncio
 import datetime
+import time
 from pathlib import Path
+
+import pytest
 import pytz
 
 import yacron.cron
-from yacron.job import RunningJob
 from yacron.config import JobConfig
-import asyncio
-import pytest
+from yacron.job import RunningJob
 
 
 @pytest.fixture(autouse=True)
@@ -37,7 +38,6 @@ def tracing_running_job(monkeypatch):
 
 
 class TracingRunningJob(RunningJob):
-
     _TRACE = asyncio.Queue()
 
     def __init__(self, config: JobConfig, retry_state) -> None:
@@ -380,7 +380,7 @@ jobs:
 
 
 @pytest.mark.asyncio
-async def test_concurrency_and_backoff(monkeypatch, tracing_running_job):
+async def test_concurrency_and_backoff(monkeypatch, tracing_running_job):  # noqa: C901
     START_TIME = datetime.datetime(
         year=1999,
         month=12,
@@ -587,7 +587,6 @@ LONDON = pytz.timezone("Europe/London")
             "",
             True,
         ),
-
         # enabled: false
         (
             "* * * * *",

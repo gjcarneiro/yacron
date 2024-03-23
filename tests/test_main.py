@@ -1,9 +1,11 @@
+import asyncio
+import sys
+from pathlib import Path
+
+import pytest
+
 import yacron.__main__
 from yacron.config import parse_config
-import sys
-import asyncio
-from pathlib import Path
-import pytest
 
 
 class FakeCron:

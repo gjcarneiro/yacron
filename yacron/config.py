@@ -1,30 +1,36 @@
-from dataclasses import dataclass
-from pwd import getpwnam
-from grp import getgrnam
+import datetime
 import logging
 import os.path
-from typing import Union  # noqa
-from typing import List, Optional, Any, Dict, NewType
-import datetime
-import pytz
+from dataclasses import dataclass
+from grp import getgrnam
+from pwd import getpwnam
+from typing import (
+    Any,
+    Dict,
+    List,
+    NewType,
+    Optional,
+    Union,  # noqa
+)
 
+import pytz
 import strictyaml
-from strictyaml import Optional as Opt, EmptyDict
+from crontab import CronTab
 from strictyaml import Any as YamlAny
 from strictyaml import (
     Bool,
+    EmptyDict,
     EmptyNone,
     Enum,
     Float,
     Int,
     Map,
+    MapPattern,
     Seq,
     Str,
-    MapPattern,
 )
+from strictyaml import Optional as Opt
 from strictyaml.ruamel.error import YAMLError
-
-from crontab import CronTab
 
 logger = logging.getLogger("yacron.config")
 WebConfig = NewType("WebConfig", Dict[str, Any])
@@ -281,7 +287,7 @@ def mergedicts(dict1, dict2):
 
 
 class JobConfig:
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict) -> None:  # noqa: C901
         self.name = config["name"]  # type: str
         self.command = config["command"]  # type: Union[str, List[str]]
         self.schedule_unparsed = config.pop("schedule")
@@ -315,7 +321,7 @@ class JobConfig:
             try:
                 self.timezone = pytz.timezone(config["timezone"])
             except pytz.UnknownTimeZoneError as err:
-                raise ConfigError("unknown timezone: " + str(err))
+                raise ConfigError("unknown timezone: " + str(err)) from err
         elif self.utc:
             self.timezone = datetime.timezone.utc
 
@@ -330,7 +336,9 @@ class JobConfig:
             try:
                 file_environs = parse_environment_file(self.env_file)
             except OSError as e:
-                raise ConfigError("Could not load env_file: {}".format(e))
+                raise ConfigError(
+                    "Could not load env_file: {}".format(e)
+                ) from e
             else:
                 # unpack variables in dictionaries
                 config_environs = {
@@ -360,8 +368,10 @@ class JobConfig:
                     pw = getpwnam(user)
                     self.uid = pw.pw_uid
                     self.gid = pw.pw_gid
-                except KeyError:
-                    raise ConfigError("User not found: {!r}".format(user))
+                except KeyError as e:
+                    raise ConfigError(
+                        "User not found: {!r}".format(user)
+                    ) from e
 
         group = config.pop("group", None)
         if group is not None:
@@ -370,8 +380,10 @@ class JobConfig:
             else:
                 try:
                     self.gid = getgrnam(group).gr_gid
-                except KeyError:
-                    raise ConfigError("Group not found: {!r}".format(group))
+                except KeyError as e:
+                    raise ConfigError(
+                        "Group not found: {!r}".format(group)
+                    ) from e
 
         if self.uid is not None or self.gid is not None:
             if os.geteuid() != 0:
@@ -427,7 +439,7 @@ def parse_config_string(data: str, path: str) -> YacronConfig:
     try:
         doc = strictyaml.load(data, CONFIG_SCHEMA, label=path).data
     except YAMLError as ex:
-        raise ConfigError(str(ex))
+        raise ConfigError(str(ex)) from ex
 
     inc_defaults_merged: dict = {}
     jobs = []
