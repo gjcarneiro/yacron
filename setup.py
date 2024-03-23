@@ -63,5 +63,5 @@ setup(
         "write_to": "yacron/version.py",
     },
     entry_points={"console_scripts": ["yacron = yacron.__main__:main"]},
-    python_requires=">=3.7",
+    python_requires=">=3.10",
 )
