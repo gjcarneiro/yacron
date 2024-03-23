@@ -135,7 +135,9 @@ class SentryReporter(Reporter):
 
         kwargs = {}
         if config.get("maxStringLength"):
-            sentry_sdk.utils.MAX_STRING_LENGTH = config["maxStringLength"]  # type:ignore
+            sentry_sdk.utils.MAX_STRING_LENGTH = (  # type:ignore
+                config["maxStringLength"]
+            )
         if config.get("environment"):
             kwargs["environment"] = config["environment"]
         sentry_sdk.init(dsn=dsn, **kwargs)
