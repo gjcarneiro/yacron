@@ -15,9 +15,7 @@ RUN pyenv global 3.12.2
 
 RUN /root/.pyenv/versions/3.12.2/bin/python -m venv /yacron
 ENV PATH=/yacron/bin:$PATH
-COPY pyinstaller/requirements.txt /root
 RUN pip install -U pip setuptools pyinstaller==6.5.0
-# RUN pip install -r /root/requirements.txt
 
 COPY . /root/yacron
 WORKDIR /root/yacron
