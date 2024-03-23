@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:20.04
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
 	apt-get install -y -q \
@@ -9,15 +9,15 @@ RUN curl https://pyenv.run | bash
 
 ENV PATH="/root/.pyenv/bin:$PATH"
 
-RUN pyenv install -l | grep 3.8
-RUN CONFIGURE_OPTS=--enable-shared pyenv install 3.8.6
-RUN pyenv global 3.8.6
+RUN pyenv install -l | grep 3.12
+RUN CONFIGURE_OPTS=--enable-shared pyenv install 3.12.2
+RUN pyenv global 3.12.2
 
-RUN /root/.pyenv/versions/3.8.6/bin/python -m venv /yacron
+RUN /root/.pyenv/versions/3.12.2/bin/python -m venv /yacron
 ENV PATH=/yacron/bin:$PATH
 COPY pyinstaller/requirements.txt /root
-RUN pip install -U pip
-RUN pip install -r /root/requirements.txt
+RUN pip install -U pip setuptools pyinstaller==6.5.0
+# RUN pip install -r /root/requirements.txt
 
 COPY . /root/yacron
 WORKDIR /root/yacron
