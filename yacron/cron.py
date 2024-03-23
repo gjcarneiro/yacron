@@ -167,9 +167,14 @@ class Cron:
         return config
 
     async def _web_get_version(self, request: web.Request) -> web.Response:
-        return web.Response(text=yacron.version.version)
+        assert self.web_config is not None
+        return web.Response(
+            text=yacron.version.version,
+            headers=self.web_config.get("headers", None),
+        )
 
     async def _web_get_status(self, request: web.Request) -> web.Response:
+        assert self.web_config is not None
         out = []
         for name, job in self.cron_jobs.items():
             running = self.running_jobs.get(name, None)
@@ -200,7 +205,9 @@ class Cron:
                     }
                 )
         if request.headers.get("Accept") == "application/json":
-            return web.json_response(out)
+            return web.json_response(
+                out, headers=self.web_config.get("headers", None)
+            )
         else:
             lines = []
             for jobstat in out:  # type: Dict[str, Any]
@@ -223,16 +230,20 @@ class Cron:
                         name=jobstat["job"], status=status
                     )
                 )
-            return web.Response(text="\n".join(lines))
+            return web.Response(
+                text="\n".join(lines),
+                headers=self.web_config.get("headers", None),
+            )
 
     async def _web_start_job(self, request: web.Request) -> web.Response:
+        assert self.web_config is not None
         name = request.match_info["name"]
         try:
             job = self.cron_jobs[name]
         except KeyError as ex:
             raise web.HTTPNotFound() from ex
         await self.maybe_launch_job(job)
-        return web.Response()
+        return web.Response(headers=self.web_config.get("headers", None))
 
     async def start_stop_web_app(self, web_config: Optional[WebConfig]):
         if self.web_runner is not None and (

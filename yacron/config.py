@@ -248,7 +248,12 @@ CONFIG_SCHEMA = EmptyDict() | Map(
     {
         Opt("defaults"): Map(_job_defaults_common),
         Opt("jobs"): Seq(Map(_job_schema_dict)),
-        Opt("web"): Map({"listen": Seq(Str())}),
+        Opt("web"): Map(
+            {
+                "listen": Seq(Str()),
+                Opt("headers"): MapPattern(Str(), Str()),
+            }
+        ),
         Opt("include"): Seq(Str()),
         Opt("logging"): Map(
             {

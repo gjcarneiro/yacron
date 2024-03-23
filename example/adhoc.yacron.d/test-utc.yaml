@@ -2,6 +2,8 @@ web:
   listen:
      - http://127.0.0.1:8080
      - unix:///tmp/yacron.sock
+  headers:
+    x-foobar: zbr
 
 defaults:
   shell: /bin/bash
