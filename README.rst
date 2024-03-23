@@ -214,7 +214,8 @@ Reporting
 +++++++++
 
 Yacron has builtin support for reporting jobs failure (more on that below) by
-email, Sentry and shell command (additional reporting methods might be added in the future):
+email, Sentry, Healthchecks, and shell command (additional reporting methods might be 
+added in the future):
 
 .. code-block:: yaml
 
@@ -259,6 +260,8 @@ email, Sentry and shell command (additional reporting methods might be added in 
         shell:
           shell: /bin/bash
           command: ...
+        healthchecks:
+          ping_url: http://checks.foobar.com/ping/a9d7db3e-6c91-4527-a495-2a676163c314
 
 Here, the ``onFailure`` object indicates that what to do when a job failure
 is detected.  In this case we ask for it to be reported both to sentry and by

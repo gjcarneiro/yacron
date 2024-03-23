@@ -87,6 +87,9 @@ _REPORT_DEFAULTS = {
         "shell": "/bin/sh",
         "command": None,
     },
+    "healthchecks": {
+        "ping_url": None,
+    },
 }
 
 
@@ -171,6 +174,11 @@ _report_schema = Map(
             {
                 Opt("shell"): Str(),
                 "command": Str() | Seq(Str()),
+            }
+        ),
+        Opt("healthchecks"): Map(
+            {
+                "ping_url": Str(),
             }
         ),
     }

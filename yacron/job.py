@@ -10,6 +10,7 @@ from socket import gethostname
 from typing import Any, Dict, List, Optional, Tuple
 import subprocess
 
+import aiohttp
 import sentry_sdk
 import sentry_sdk.utils
 
@@ -160,6 +161,31 @@ class SentryReporter(Reporter):
             sentry_sdk.capture_message(
                 body, level=config.get("level", "error")
             )
+
+class HealthchecksReporter(Reporter):
+    async def report(
+        self, success: bool, job: 'RunningJob', config: Dict[str, Any]
+    ) -> None:
+        config = config['healthchecks']
+        # Exit early if not successful since Healthchecks only receives positive events.
+        if not success or not config['ping_url']:
+            return
+
+        url = config['ping_url']
+        bad_req = False
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    txt = await resp.text()
+                    if txt != 'OK':
+                        logger.debug("Got unexpected response from %s: %r", url, txt)
+                        bad_req = True
+        except Exception:
+            bad_req = True
+            logger.exception("Error GETing %s", config['ping_url'])
+
+        if bad_req:
+            return
 
 
 class MailReporter(Reporter):
@@ -327,6 +353,7 @@ class RunningJob:
         SentryReporter(),
         MailReporter(),
         ShellReporter(),
+        HealthchecksReporter(),
     ]  # type: List[Reporter]
 
     def __init__(
