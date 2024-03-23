@@ -287,9 +287,7 @@ class JobConfig:
         self.schedule_unparsed = config.pop("schedule")
         if isinstance(self.schedule_unparsed, str):
             if self.schedule_unparsed in {"@reboot"}:
-                self.schedule = (
-                    self.schedule_unparsed
-                )  # type: Union[CronTab, str]
+                self.schedule = self.schedule_unparsed  # type: Union[CronTab, str]
             else:
                 self.schedule = CronTab(self.schedule_unparsed)
         elif isinstance(self.schedule_unparsed, dict):

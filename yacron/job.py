@@ -2,19 +2,18 @@ import asyncio
 import asyncio.subprocess
 import logging
 import os
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 from email.message import EmailMessage
 from socket import gethostname
 from typing import Any, Dict, List, Optional, Tuple
-import subprocess
-
-import sentry_sdk
-import sentry_sdk.utils
 
 import aiosmtplib
 import jinja2
+import sentry_sdk
+import sentry_sdk.utils
 
 from yacron.config import JobConfig
 from yacron.statsd import StatsdJobMetricWriter

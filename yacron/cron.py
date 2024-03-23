@@ -1,24 +1,26 @@
-import logging.config
 import asyncio
 import asyncio.subprocess
 import datetime
 import logging
+import logging.config
 from collections import OrderedDict, defaultdict
 from typing import Any, Awaitable, Dict, List, Optional, Union  # noqa
 from urllib.parse import urlparse
+
 from aiohttp import web
+from crontab import CronTab  # noqa
+
 import yacron.version
 from yacron.config import (
-    JobConfig,
-    parse_config,
     ConfigError,
-    parse_config_string,
+    JobConfig,
+    JobDefaults,
     WebConfig,
     YacronConfig,
-    JobDefaults,
+    parse_config,
+    parse_config_string,
 )
-from yacron.job import RunningJob, JobRetryState
-from crontab import CronTab  # noqa
+from yacron.job import JobRetryState, RunningJob
 
 logger = logging.getLogger("yacron")
 WAKEUP_INTERVAL = datetime.timedelta(minutes=1)
@@ -77,9 +79,7 @@ class Cron:
         self.cron_jobs = OrderedDict()  # type: Dict[str, JobConfig]
         # list of cron jobs already running
         # name -> list of RunningJob
-        self.running_jobs = defaultdict(
-            list
-        )  # type: Dict[str, List[RunningJob]]
+        self.running_jobs = defaultdict(list)  # type: Dict[str, List[RunningJob]]
         self.config_arg = config_arg
         if config_arg is not None:
             self.update_config()
@@ -212,7 +212,7 @@ class Cron:
                     status = "scheduled ({})".format(
                         (
                             jobstat["scheduled_in"]
-                            if type(jobstat["scheduled_in"]) is str
+                            if isinstance(jobstat["scheduled_in"], str)
                             else naturaltime(
                                 jobstat["scheduled_in"], future=True
                             )

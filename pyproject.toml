@@ -1,6 +1,10 @@
 [tool.black]
 line-length = 79
-target_version = ['py37']
+target_version = ['py310']
+
+[tool.ruff]
+target-version = "py310"
+line-length = 79
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -1,14 +1,14 @@
 name: tox
 on: [push, pull_request]
 jobs:
-  tox-flake8:
+  tox-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
       - run: pip install --upgrade pip
       - run: pip install tox
-      - run: tox -e flake8
+      - run: tox -e lint
 
   tox-mypy:
     runs-on: ubuntu-latest
