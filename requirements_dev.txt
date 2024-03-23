@@ -1,6 +1,6 @@
 aiohttp~=3.8
 flake8
-mypy==0.910
+mypy
 mypy-extensions
 pytest
 pytest-asyncio

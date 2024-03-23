@@ -15,7 +15,7 @@ requirements = [
     "crontab==0.22.8",
     "aiohttp>=3.0,<4",
     "sentry-sdk",
-    "aiosmtplib",
+    "aiosmtplib>=1,<2",
     "jinja2",
     "pytz",
 ]

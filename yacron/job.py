@@ -135,7 +135,7 @@ class SentryReporter(Reporter):
 
         kwargs = {}
         if config.get("maxStringLength"):
-            sentry_sdk.utils.MAX_STRING_LENGTH = config["maxStringLength"]
+            sentry_sdk.utils.MAX_STRING_LENGTH = config["maxStringLength"]  # type:ignore
         if config.get("environment"):
             kwargs["environment"] = config["environment"]
         sentry_sdk.init(dsn=dsn, **kwargs)
@@ -200,7 +200,7 @@ class MailReporter(Reporter):
         message["From"] = mail["from"]
         message["To"] = mail["to"].strip()
         message["Subject"] = subject.strip()
-        message["Date"] = datetime.now(timezone.utc)
+        message["Date"] = datetime.now(timezone.utc).isoformat()
         if mail["html"]:
             message.set_payload(body)
             message.add_header("Content-Type", "text/html")
