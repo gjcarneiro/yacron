@@ -37,7 +37,7 @@ setup(
     description="A modern Cron replacement that is Docker-friendly",
     long_description=(readme + "\n\n" + history),
     author="Gustavo Carneiro",
-    author_email="gustavocarneiro@gambitresearch.com",
+    author_email="gjcarneiro@gmail.com",
     url="https://github.com/gjcarneiro/yacron",
     packages=find_packages(include=["yacron"]),
     include_package_data=True,
