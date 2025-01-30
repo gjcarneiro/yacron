@@ -489,8 +489,13 @@ def parse_config_file(
 def parse_config(config_arg: str) -> YacronConfig:
     jobs = []
     config_errors = {}
+    
     web_config = None
     web_config_source_fname = None
+    
+    logging_config = None
+    logging_config_source_fname = None
+
     if os.path.isdir(config_arg):
         for direntry in os.scandir(config_arg):
             base, ext = os.path.splitext(direntry.name)
@@ -516,18 +521,32 @@ def parse_config(config_arg: str) -> YacronConfig:
                                     web_config_source_fname, direntry.path
                                 )
                             )
+                    if config.logging_config is not None:
+                        if logging_config is None:
+                            logging_config = config.logging_config
+                            logging_config_source_fname = direntry.path
+                        else:
+                            raise ConfigError(
+                                "Multiple 'logging' configurations found: "
+                                "first in {}, now in {}".format(
+                                    logging_config_source_fname, direntry.path
+                                )
+                            )
     else:
         try:
             config = parse_config_file(config_arg)
+            logging_config = config.logging_config
+            web_config = config.web_config
         except OSError as ex:
             config_errors[config_arg] = str(ex)
         else:
             jobs.extend(config.jobs)
     if config_errors:
         raise ConfigError("\n---".join(config_errors.values()))
+    
     return YacronConfig(
         jobs=jobs,
-        web_config=config.web_config,
         job_defaults=config.job_defaults,
-        logging_config=config.logging_config,
+        web_config=web_config,
+        logging_config=logging_config,
     )
