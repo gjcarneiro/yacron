@@ -14,7 +14,7 @@ requirements = [
     "strictyaml>=0.7.2",
     "crontab==0.22.8",
     "aiohttp>=3.0,<4",
-    "sentry-sdk",
+    "sentry-sdk<2",
     "aiosmtplib>=1,<2",
     "jinja2",
     "pytz",

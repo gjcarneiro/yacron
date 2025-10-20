@@ -69,7 +69,7 @@ def main():  # pragma: no cover
         _loop = asyncio.ProactorEventLoop()
         asyncio.set_event_loop(_loop)
     else:
-        _loop = asyncio.get_event_loop()
+        _loop = asyncio.new_event_loop()
     try:
         main_loop(_loop)
     finally:
