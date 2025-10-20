@@ -63,8 +63,7 @@ STDERR:
 """
 
 DEFAULT_SUBJECT_TEMPLATE = (
-    "Cron job '{{name}}' {% if success %}completed"
-    "{% else %}failed{% endif %}"
+    "Cron job '{{name}}' {% if success %}completed{% else %}failed{% endif %}"
 )
 
 _REPORT_DEFAULTS = {

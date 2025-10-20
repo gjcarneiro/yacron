@@ -465,7 +465,7 @@ class Cron:
         self, job_name: str, delay: float, retry_num: int
     ) -> None:
         logger.info(
-            "Cron job %s scheduled to be retried (#%i) " "in %.1f seconds",
+            "Cron job %s scheduled to be retried (#%i) in %.1f seconds",
             job_name,
             retry_num,
             delay,
