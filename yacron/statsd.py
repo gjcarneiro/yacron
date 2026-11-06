@@ -26,7 +26,7 @@ class StatsdClientProtocol:
 
 
 async def send_to_statsd(host, port, message):
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     connect = loop.create_datagram_endpoint(
         lambda: StatsdClientProtocol(message, loop), remote_addr=(host, port)
     )
